@@ -77,7 +77,7 @@ public class IginxInterpreter extends AbstractInterpreter {
   private Queue<Double> downloadFileSizeQueue = new LinkedList<>();
   private double downloadFileTotalSize = 0L;
 
-  private String outfileRegex = "(?i)(\\bINTO\\s+OUTFILE\\s+\")(.*?)(\"\\s+AS\\s+STREAM\\b)";
+  private String outfileRegex = "(?i)(\\bINTO\\s+OUTFILE\\s+\")(.*?)(\"\\s+AS\\s+STREAM)(?:\\s+showimg\\s+(true|false))?\\s*;$";
 
   private static Map<String, CompletableFuture<InterpreterResult>> taskMap =
       new ConcurrentHashMap<>();
@@ -125,7 +125,7 @@ public class IginxInterpreter extends AbstractInterpreter {
         Integer.parseInt(
             properties.getProperty(IGINX_FILE_HTTP_PORT, DEFAULT_FILE_HTTP_PORT).trim());
 
-    localIpAddress = Objects.requireNonNull(getLocalHostExactAddress());
+    localIpAddress = DEFAULT_HOST;//Objects.requireNonNull(getLocalHostExactAddress());
 
     session = new Session(host, port, username, password);
     try {
@@ -219,13 +219,18 @@ public class IginxInterpreter extends AbstractInterpreter {
   private InterpreterResult processSql(String sql) {
     try {
       // 如果sql中有outfile关键字，则进行特殊处理，将结果下载到zeppelin所在的服务器上，并在表单中返回下载链接
-      String outfileRegex = "(?i)(\\bINTO\\s+OUTFILE\\s+\")(.*?)(\"\\s+AS\\s+STREAM\\b)";
+      String outfileRegex = "(?i)\\bINTO\\s+OUTFILE\\s+\"(.*?)\"\\s+AS\\s+STREAM(?:\\s+showimg\\s+(true|false))?\\s*;$";
       Pattern pattern = Pattern.compile(outfileRegex);
       Matcher matcher = pattern.matcher(sql.toLowerCase());
       if (matcher.find()) {
-        return processOutfileSql(sql, matcher.group(1));
+        if(matcher.group(2) != null)
+          if(matcher.group(2).equals("true"))
+            return processOutfileSql(sql, matcher.group(2), true);
+          else
+            return processOutfileSql(sql, matcher.group(2), false);
+        else
+          return processOutfileSql(sql, matcher.group(2), false);
       }
-
       if (isLoadDataFromCsv(sql.toLowerCase())) {
         return processLoadCsv(sql);
       }
@@ -325,11 +330,12 @@ public class IginxInterpreter extends AbstractInterpreter {
    *
    * @param sql 带有outfile关键字的sql语句
    * @param originOutfilePath 原始的outfile路径
+   * @param showimg
    * @return InterpreterResult
    * @throws SessionException
    * @throws IOException
    */
-  private InterpreterResult processOutfileSql(String sql, String originOutfilePath)
+  private InterpreterResult processOutfileSql(String sql, String originOutfilePath, Boolean showimg)
       throws SessionException, IOException {
 
     // 根据当前年月日时分秒毫秒生成outfile的文件夹名，将文件下载到此处
@@ -357,7 +363,7 @@ public class IginxInterpreter extends AbstractInterpreter {
       sql =
           sql.substring(0, lastMatchEnd)
               + sql.substring(lastMatchEnd) // on windows, '\' in path needs to be replaced by "\\".
-                  .replaceFirst(outfileRegex, "$1" + outfileDirPath.replace("\\", "\\\\") + "$3");
+                  .replaceFirst(outfileRegex, "$1" + outfileDirPath.replace("\\", "\\\\") + "$3;");
     }
 
     QueryDataSet res = session.executeQuery(sql);
@@ -388,6 +394,24 @@ public class IginxInterpreter extends AbstractInterpreter {
     downloadFileTotalSize += fileSize;
     clearNGINXStaticFiles();
 
+    InterpreterResult interpreterResult = new InterpreterResult(InterpreterResult.Code.SUCCESS);
+    if(showimg){
+      if (fileNames != null) {
+        String[] IMAGE_EXTENSIONS = { "jpg", "jpeg", "png", "gif", "bmp", "tiff" };
+        for (String fileName : fileNames) {
+          for (String ext : IMAGE_EXTENSIONS) {
+            if (fileName.endsWith("." + ext)) {
+              byte[] imageBytes = Files.readAllBytes(Paths.get(outfileDirPath + "/" + fileName));
+              String base64Image = Base64.getEncoder().encodeToString(imageBytes);
+              
+              interpreterResult.add(new InterpreterResultMessage(InterpreterResult.Type.TEXT,fileName));
+              interpreterResult.add(new InterpreterResultMessage(InterpreterResult.Type.IMG, base64Image));
+              break;
+            }
+          }
+        }
+      }
+    }
     // 构建表格
     String downloadLink = "%%html<a href=\"%s\" download=\"%s\">点击下载</a>";
     StringBuilder builder = new StringBuilder();
@@ -412,9 +436,7 @@ public class IginxInterpreter extends AbstractInterpreter {
       }
     }
     String msg = builder.toString();
-    InterpreterResult interpreterResult = new InterpreterResult(InterpreterResult.Code.SUCCESS);
     interpreterResult.add(InterpreterResult.Type.TABLE, msg);
-
     return interpreterResult;
   }
 
