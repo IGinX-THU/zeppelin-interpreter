@@ -194,3 +194,13 @@ RESTful的curl语句属于shell语句，我们需要用到Zeppelin自带的shell
 使用shell解释器的方法是在第一行增加`%sh`，剩余语句在第二行输入。另外由于Zeppelin不支持传入文件，curl中的json部分需要直接写在语句里。
 
 ![img](./images/restful.png)
+
+### 文件下载以及图片展示
+
+支持下载文件，并且可以展示filesystem中的图片
+
+```shell
+select * from table into outfile "path" as stream;（默认不展示图片，仅提供文件下载链接）
+select * from table into outfile "path" as stream showimg true;（展示fs中的图片，并提供文件下载链接）
+select * from table into outfile "path" as stream showimg false;（仅提供文件下载链接）
+```

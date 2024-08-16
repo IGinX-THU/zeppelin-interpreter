@@ -125,7 +125,7 @@ public class IginxInterpreter extends AbstractInterpreter {
         Integer.parseInt(
             properties.getProperty(IGINX_FILE_HTTP_PORT, DEFAULT_FILE_HTTP_PORT).trim());
 
-    localIpAddress = DEFAULT_HOST;//Objects.requireNonNull(getLocalHostExactAddress());
+    localIpAddress = Objects.requireNonNull(getLocalHostExactAddress());
 
     session = new Session(host, port, username, password);
     try {
@@ -225,11 +225,11 @@ public class IginxInterpreter extends AbstractInterpreter {
       if (matcher.find()) {
         if(matcher.group(2) != null)
           if(matcher.group(2).equals("true"))
-            return processOutfileSql(sql, matcher.group(2), true);
+            return processOutfileSql(sql, matcher.group(1), true);
           else
-            return processOutfileSql(sql, matcher.group(2), false);
+            return processOutfileSql(sql, matcher.group(1), false);
         else
-          return processOutfileSql(sql, matcher.group(2), false);
+          return processOutfileSql(sql, matcher.group(1), false);
       }
       if (isLoadDataFromCsv(sql.toLowerCase())) {
         return processLoadCsv(sql);
