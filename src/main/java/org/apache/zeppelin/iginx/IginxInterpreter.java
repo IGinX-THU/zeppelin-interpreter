@@ -28,7 +28,7 @@ import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.zeppelin.interpreter.*;
 
-public class IginxInterpreter extends AbstractInterpreter {
+public class IginxInterpreter extends Interpreter {
 
   private static final String IGINX_HOST = "iginx.host";
   private static final String IGINX_PORT = "iginx.port";
@@ -103,11 +103,6 @@ public class IginxInterpreter extends AbstractInterpreter {
   }
 
   @Override
-  public ZeppelinContext getZeppelinContext() {
-    return null;
-  }
-
-  @Override
   public void open() throws InterpreterException {
     host = getProperty(IGINX_HOST, DEFAULT_HOST).trim();
     port = Integer.parseInt(getProperty(IGINX_PORT, DEFAULT_PORT).trim());
@@ -161,7 +156,7 @@ public class IginxInterpreter extends AbstractInterpreter {
   }
 
   @Override
-  public InterpreterResult internalInterpret(String st, InterpreterContext context)
+  public InterpreterResult interpret(String st, InterpreterContext context)
       throws InterpreterException {
     if (exception != null) {
       return new InterpreterResult(InterpreterResult.Code.ERROR, exception.getMessage());
