@@ -34,7 +34,7 @@ public class SimpleFileServer {
       if (isOnWin) {
         Runtime.getRuntime()
             .exec(
-                "for /f \"tokens=5\" %%a in ('netstat -ano ^| findstr :"
+                "for /f \"tokens=5\" %a in ('netstat -ano ^| findstr :"
                     + port
                     + "') do taskkill /F /PID %a");
       } else {
