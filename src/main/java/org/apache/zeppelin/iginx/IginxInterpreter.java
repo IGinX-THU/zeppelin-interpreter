@@ -348,10 +348,6 @@ public class IginxInterpreter extends Interpreter {
     } catch (SessionException e) {
       msg = "Error: " + e.getMessage();
       interpreterResult = new InterpreterResult(InterpreterResult.Code.ERROR, msg);
-    } catch (Exception e) {
-      msg = "Execute Error: encounter error(s) when executing sql statement, "
-              + "see server log for more details.";
-      interpreterResult = new InterpreterResult(InterpreterResult.Code.ERROR, msg);
     }
 
     return interpreterResult;
