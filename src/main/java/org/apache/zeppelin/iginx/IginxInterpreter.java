@@ -8,6 +8,7 @@ import cn.edu.tsinghua.iginx.exception.SessionException;
 import cn.edu.tsinghua.iginx.session.QueryDataSet;
 import cn.edu.tsinghua.iginx.session.Session;
 import cn.edu.tsinghua.iginx.session.SessionExecuteSqlResult;
+import cn.edu.tsinghua.iginx.thrift.LoadUDFResp;
 import cn.edu.tsinghua.iginx.thrift.SqlType;
 import cn.edu.tsinghua.iginx.utils.FormatUtils;
 import cn.edu.tsinghua.iginx.utils.Pair;
@@ -233,6 +234,8 @@ public class IginxInterpreter extends AbstractInterpreter {
       }
       if (isLoadDataFromCsv(sql.toLowerCase())) {
         return processLoadCsv(sql);
+      } else if (isCreateFunction(sql.toLowerCase())) {
+        return processCreateFunction(sql);
       }
 
       SessionExecuteSqlResult sqlResult = session.executeSql(sql);
@@ -282,6 +285,10 @@ public class IginxInterpreter extends AbstractInterpreter {
     return sql.startsWith("load data from infile ") && sql.contains("as csv");
   }
 
+  private static boolean isCreateFunction(String sql) {
+    return sql.startsWith("create") && sql.contains("function");
+  }
+
   /**
    * 处理 load data from csv语句，可使用的文件是客户端本地文件
    *
@@ -321,6 +328,36 @@ public class IginxInterpreter extends AbstractInterpreter {
     msg = "Successfully write " + recordsNum + " record(s) to: " + columns;
     interpreterResult = new InterpreterResult(InterpreterResult.Code.SUCCESS);
     interpreterResult.add(InterpreterResult.Type.TEXT, msg);
+
+    return interpreterResult;
+  }
+
+  private InterpreterResult processCreateFunction(String sql) {
+    String msg;
+    InterpreterResult interpreterResult;
+
+    try {
+      String parseErrorMsg;
+      LoadUDFResp resp = session.executeRegisterTask(sql);
+      parseErrorMsg = resp.getParseErrorMsg();
+      if (parseErrorMsg != null && !parseErrorMsg.equals("")) {
+        msg = "Error: " + parseErrorMsg;
+        interpreterResult = new InterpreterResult(InterpreterResult.Code.ERROR, msg);
+
+        return interpreterResult;
+      }
+
+      msg = "Success!";
+      interpreterResult = new InterpreterResult(InterpreterResult.Code.SUCCESS);
+      interpreterResult.add(InterpreterResult.Type.TEXT, msg);
+    } catch (SessionException e) {
+      msg = "Error: " + e.getMessage();
+      interpreterResult = new InterpreterResult(InterpreterResult.Code.ERROR, msg);
+    } catch (Exception e) {
+      msg = "Execute Error: encounter error(s) when executing sql statement, "
+              + "see server log for more details.";
+      interpreterResult = new InterpreterResult(InterpreterResult.Code.ERROR, msg);
+    }
 
     return interpreterResult;
   }
