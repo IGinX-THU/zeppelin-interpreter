@@ -122,7 +122,10 @@ public class IginxInterpreter extends Interpreter {
         Integer.parseInt(
             properties.getProperty(IGINX_FILE_HTTP_PORT, DEFAULT_FILE_HTTP_PORT).trim());
 
-    localIpAddress = Objects.requireNonNull(getLocalHostExactAddress());
+    localIpAddress = getLocalHostExactAddress();
+    if (localIpAddress == null) {
+      localIpAddress = "127.0.0.1";
+    }
 
     session = new Session(host, port, username, password);
     try {
