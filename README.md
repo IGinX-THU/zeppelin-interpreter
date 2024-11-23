@@ -200,7 +200,11 @@ IGinX Zeppelin 解释器是需要连接 IGinX 的，如果我们重启了 IGinX�
 #### 特别说明
 ##### LOAD DATA 命令
 输入LOAD DATA 命令后，需要先点击执行按钮调出文件选择控件，命令中的文件名（1处）与选择文件控件中的名称（2处，选择文件后自动填充，不可手动修改）需要保持一致。
-![img.png](img.png)
+![img](./images/load_data.png)
+
+##### SHOW COLUMNS 命令
+展示可视化资产图会涉及到embedding，请前往 https://nlp.stanford.edu/projects/glove/ 下载相关模型，解压后放入 /resources/model 文件夹下，并根据模型的embedding维度修改embeddingUtils类中的EMBEDDING_DIMENSION参数。
+![img](./images/show_columns.png)
 
 ### 使用RESTful语句
 

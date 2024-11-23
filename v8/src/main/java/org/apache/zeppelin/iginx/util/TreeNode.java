@@ -7,19 +7,13 @@ public class TreeNode {
   String path;
   String value;
   List<TreeNode> children;
-  List<String> columns;
+  List<Double> embedding;
 
-  public TreeNode(String path, String value, List<String> columns) {
+  public TreeNode(String path, String value, List<Double> embedding) {
     this.path = path;
     this.value = value;
     this.children = new ArrayList<>();
-    this.columns = columns;
-  }
-
-  public TreeNode(String path, String value) {
-    this.path = path;
-    this.value = value;
-    this.children = new ArrayList<>();
+    this.embedding = embedding;
   }
 
   public String getValue() {
@@ -38,11 +32,19 @@ public class TreeNode {
     this.children = children;
   }
 
-  public List<String> getColumns() {
-    return columns;
+  public String getPath() {
+    return path;
   }
 
-  public void setColumns(List<String> columns) {
-    this.columns = columns;
+  public void setPath(String path) {
+    this.path = path;
+  }
+
+  public List<Double> getEmbedding() {
+    return embedding;
+  }
+
+  public void setEmbedding(List<Double> embedding) {
+    this.embedding = embedding;
   }
 }

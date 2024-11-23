@@ -334,7 +334,7 @@ public class IginxInterpreter8 extends Interpreter {
    *
    * @param sqlResult
    */
-  public String buildNetworkForShowColumns(SessionExecuteSqlResult sqlResult) {
+  public String buildNetworkForShowColumns(SessionExecuteSqlResult sqlResult) throws Exception {
     StringBuilder mainHtml = new StringBuilder();
     List<List<String>> queryList =
         sqlResult.getResultInList(true, FormatUtils.DEFAULT_TIME_FORMAT, timePrecision);
@@ -345,6 +345,15 @@ public class IginxInterpreter8 extends Interpreter {
             row -> {
               MultiwayTree.addTreeNodeFromString(tree, row.get(0));
             });
+    try {
+      logger.info("before merge, the size of forest is: ", tree.getRoot().getChildren().size());
+      // ChunkMerge or RandomMerge
+      MultiwayTree.mergeTree(tree, "ChunkMerge");
+      logger.info("after merge, the size of forest is: ", tree.getRoot().getChildren().size());
+    } catch (Exception e) {
+      logger.error("merge tree error");
+      e.printStackTrace();
+    }
     try (InputStream inputStream =
         IginxInterpreter8.class.getClassLoader().getResourceAsStream("static/vis/network.html")) {
       BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
@@ -359,24 +368,31 @@ public class IginxInterpreter8 extends Interpreter {
       // 写入vis等库文件，只在新环境执行一次
       String targetPath = outfileDir + "/graphs/lib/";
       if (!FileUtil.isDirectoryLoaded(targetPath)) {
+        logger.info("buildNetworkForShowColumns: upload static resources start");
         String sourcePath = "static/vis/lib/";
         String jarUrl =
             Objects.requireNonNull(IginxInterpreter8.class.getClassLoader().getResource(sourcePath))
                 .toString();
         String jarPath = jarUrl.substring(jarUrl.indexOf("file:") + 5, jarUrl.indexOf(".jar") + 4);
         FileUtil.extractDirectoryFromJar(jarPath, sourcePath, targetPath);
+        logger.info("buildNetworkForShowColumns: upload static resources finish");
       }
       // 写入network html
       File networkHtml = new File(outfileDir + "/graphs/network.html");
+      logger.info(
+          "buildNetworkForShowColumns: the absolute path of the output network.html is {}",
+          networkHtml.getAbsolutePath());
       OutputStream outputStream = Files.newOutputStream(networkHtml.toPath());
       outputStream.write(html.getBytes());
       outputStream.close();
+      logger.info("buildNetworkForShowColumns: html(string) write to network.html finish");
       InputStream inputStreamMain =
           IginxInterpreter8.class.getClassLoader().getResourceAsStream("static/vis/main.html");
       BufferedReader br = new BufferedReader(new InputStreamReader(inputStreamMain));
       while ((line = br.readLine()) != null) {
         mainHtml.append(line).append("\n");
       }
+      logger.info("buildNetworkForShowColumns: mainHtml is: {}", mainHtml);
       return mainHtml
           .toString()
           .replace("FILE_HOST", fileHttpHost)

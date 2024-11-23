@@ -1,6 +1,9 @@
 package org.apache.zeppelin.iginx.util;
 
+import java.lang.reflect.Constructor;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.zeppelin.iginx.util.algorithm.mergeforest.MergeForestStrategy;
 
 public class MultiwayTree {
   public static final String ROOT_NODE_NAME = "数据资产";
@@ -51,7 +54,7 @@ public class MultiwayTree {
 
   public static MultiwayTree getMultiwayTree() {
     MultiwayTree tree = new MultiwayTree();
-    tree.root = new TreeNode(ROOT_NODE_PATH, ROOT_NODE_NAME); // 初始化
+    tree.root = new TreeNode(ROOT_NODE_PATH, ROOT_NODE_NAME, null); // 初始化
     return tree;
   }
 
@@ -59,9 +62,19 @@ public class MultiwayTree {
     String[] nodes = nodeString.split("\\.");
     TreeNode newNode = tree.root;
     for (int i = 0; i < nodes.length; i++) {
+      List<Double> embedding = EmbeddingUtils.getEmbedding(nodes[i]);
       newNode =
           tree.insert(
-              newNode, new TreeNode(StringUtils.join(newNode.path, ".", nodes[i]), nodes[i]));
+              newNode,
+              new TreeNode(StringUtils.join(newNode.path, ".", nodes[i]), nodes[i], embedding));
     }
+  }
+
+  public static void mergeTree(MultiwayTree tree, String strategy) throws Exception {
+    Class<?> mergeClass =
+        Class.forName("org.apache.zeppelin.iginx.util.algorithm.mergeforest." + strategy);
+    Constructor<?> constructor = mergeClass.getConstructor();
+    MergeForestStrategy mergeForestStrategy = (MergeForestStrategy) constructor.newInstance();
+    mergeForestStrategy.mergeForest(tree.root);
   }
 }
