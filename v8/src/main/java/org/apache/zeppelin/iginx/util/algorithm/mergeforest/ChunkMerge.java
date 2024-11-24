@@ -10,16 +10,17 @@ import java.util.concurrent.Future;
 import org.apache.zeppelin.iginx.util.EmbeddingUtils;
 import org.apache.zeppelin.iginx.util.LLMUtils;
 import org.apache.zeppelin.iginx.util.TreeNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ChunkMerge implements MergeForestStrategy {
+  private static final Logger logger = LoggerFactory.getLogger(ChunkMerge.class);
   private static final int THREAD_POOL_SIZE = 8; // 可根据机器配置调整线程数
 
   /**
-   * 分块合并算法
-   * 1. 循环多轮进行，当某轮结束后的森林大小满足要求，则退出
-   * 2. 每轮按照线程数平均分块，每块中的树分别进行合并，块间互不干扰
-   * 3. 通过 findBestMergeGroup 查找最合适的合并组：块中的所有树通过循环，两两比较，找到 embedding 最相似的两个合并
-   *    (第3步的 findBestMergeGroup 有较大的优化空间，因为有时候多棵树一起合并可能效果更好)
+   * 分块合并算法 1. 循环多轮进行，当某轮结束后的森林大小满足要求，则退出 2. 每轮按照线程数平均分块，每块中的树分别进行合并，块间互不干扰 3. 通过 findBestMergeGroup
+   * 查找最合适的合并组：块中的所有树通过循环，两两比较，找到 embedding 最相似的两个合并 (第3步的 findBestMergeGroup
+   * 有较大的优化空间，因为有时候多棵树一起合并可能效果更好)
    *
    * @param root
    * @throws ExecutionException
@@ -28,11 +29,11 @@ public class ChunkMerge implements MergeForestStrategy {
   public void mergeForest(TreeNode root) throws ExecutionException, InterruptedException {
     List<TreeNode> forest = root.getChildren();
     int targetTreeCount = (int) Math.ceil(Math.sqrt(forest.size()));
-    System.out.println("targetTreeCount: " + targetTreeCount);
+    logger.info("targetTreeCount: {}", targetTreeCount);
     ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
     while (forest.size() > targetTreeCount) {
-      System.out.println("beginning new merge, the recent size of forest is: " + forest.size());
+      logger.info("beginning new merge, the recent size of forest is: {}", forest.size());
       List<Future<List<TreeNode>>> futureResults = new ArrayList<>();
 
       int chunkSize = Math.max(2, (int) Math.ceil((double) forest.size() / THREAD_POOL_SIZE));
@@ -67,7 +68,7 @@ public class ChunkMerge implements MergeForestStrategy {
 
     if (!nodesToMerge.isEmpty()) {
       String newConceptName = LLMUtils.getConcept(nodesToMerge);
-      System.out.println("get new concept name: " + newConceptName);
+      logger.info("get new concept name: {}", newConceptName);
 
       List<Double> newEmbedding = EmbeddingUtils.getEmbedding(newConceptName);
       TreeNode newParent = new TreeNode(newConceptName, newConceptName, newEmbedding);

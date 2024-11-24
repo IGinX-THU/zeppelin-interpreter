@@ -18,8 +18,7 @@ public class LLMUtils {
   private static final String API_URL = "https://open.bigmodel.cn/api/paas/v4/chat/completions";
 
   /**
-   * 输入 prompt ，LLM 返回响应结果
-   * 目前使用的是智谱 GLM-4 模型
+   * 输入 prompt ，LLM 返回响应结果 目前使用的是智谱 GLM-4 模型
    *
    * @param prompt
    * @return
@@ -79,8 +78,7 @@ public class LLMUtils {
   }
 
   /**
-   * 获取概括的单词，由于有些情况确实不适合合并，允许返回 wordA-wordB 的样式
-   * 用于 【顶层合并】
+   * 获取概括的单词，由于有些情况确实不适合合并，允许返回 wordA-wordB 的样式 用于 【顶层合并】
    *
    * @param nodes
    * @return
@@ -90,7 +88,8 @@ public class LLMUtils {
     for (TreeNode node : nodes) {
       conceptName.append(node.getValue()).append(";");
     }
-   //你是一个概括大师，我将给你多个短语，中间用';'来分隔，请给概括这些短语，返回一个短语。注意只需返回这个短语即可，短语使用大括号进行包裹。需要你合并概括的多和短语是：" + conceptName
+    // 你是一个概括大师，我将给你多个短语，中间用';'来分隔，请给概括这些短语，返回一个短语。注意只需返回这个短语即可，短语使用大括号进行包裹。需要你合并概括的多和短语是：" +
+    // conceptName
     String res =
         getResponse(
             "You are a summarization master. I will provide multiple words or phases separated by ';'. Please summarize them into a single word or a phase if possible. If merging is not feasible, return a hyphen-separated string like 'apple-desk'."

@@ -330,7 +330,7 @@ public class IginxInterpreter8 extends Interpreter {
    *
    * @param sqlResult
    */
-  public String buildNetworkForShowColumns(SessionExecuteSqlResult sqlResult) throws Exception {
+  public String buildNetworkForShowColumns(SessionExecuteSqlResult sqlResult) {
     StringBuilder mainHtml = new StringBuilder();
     List<List<String>> queryList =
         sqlResult.getResultInList(true, FormatUtils.DEFAULT_TIME_FORMAT, timePrecision);

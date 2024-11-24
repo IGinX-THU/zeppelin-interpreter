@@ -40,25 +40,28 @@ public class EmbeddingUtils {
   }
 
   /**
-   * 获取输入内容的 embedding
-   * 1. 直接通过 Map 查找，若找到，直接返回结果
-   * 2. 若找不到，则对输入内容按照 "-", " ", "_" 进行划分，再分别获取 embeddig 并取平均
-   * 3. 若输入的内容找不到且已无法再划分，则随机一个 embedding (固定了随机种子，为了让每次执行的结果一致)
+   * 获取输入内容的 embedding 1. 直接通过 Map 查找，若找到，直接返回结果 2. 若找不到，则对输入内容按照 "-", " ", "_" 进行划分，再分别获取 embeddig
+   * 并取平均 3. 若输入的内容找不到且已无法再划分，则随机一个 embedding (固定了随机种子，为了让每次执行的结果一致)
    *
    * @param word
    * @return
    */
   public static List<Double> getEmbedding(String word) {
+    System.out.println("getEmbedding: input word is: " + word);
+    logger.info("getEmbedding: input word is: {}", word);
     List<Double> embedding = embeddings.get(word);
 
     if (embedding == null) {
       // 按照"-"," ","_"分割取embedding的平均值
       String[] parts = word.split("[-\\s_]+");
       if (parts.length > 1) {
-        List<Double> sumEmbedding = new ArrayList<>();
+        List<Double> sumEmbedding = new ArrayList<>(EMBEDDING_DIMENSION);
+        for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
+          sumEmbedding.add(0.0); // 初始化为零向量
+        }
         double sum = 0;
         for (String part : parts) {
-          List<Double> partEmbedding = embeddings.get(part);
+          List<Double> partEmbedding = getEmbedding(part);
           if (partEmbedding != null) {
             for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
               sumEmbedding.set(i, sumEmbedding.get(i) + partEmbedding.get(i)); // 按维度累加
@@ -73,7 +76,8 @@ public class EmbeddingUtils {
       } else {
         // 如果所有部分都未找到且不可拆分，生成随机向量
         embedding = generateRandomVector(EMBEDDING_DIMENSION);
-        logger.info("fail to find the embedding of '" + word + "', generating Random Vector to replace");
+        logger.info(
+            "fail to find the embedding of '" + word + "', generating Random Vector to replace");
       }
     }
     return embedding;
@@ -110,7 +114,7 @@ public class EmbeddingUtils {
 
   public static void main(String[] args) {
     // 测试：获取两个句子的嵌入向量并计算相似度
-    List<Double> embedding1 = getEmbedding("weather");
+    List<Double> embedding1 = getEmbedding("summer_2024");
     List<Double> embedding2 = getEmbedding("climate");
 
     double similarity = calculateSimilarity(embedding1, embedding2);

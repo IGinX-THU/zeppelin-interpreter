@@ -6,17 +6,18 @@ import java.util.Random;
 import org.apache.zeppelin.iginx.util.EmbeddingUtils;
 import org.apache.zeppelin.iginx.util.LLMUtils;
 import org.apache.zeppelin.iginx.util.TreeNode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RandomMerge implements MergeForestStrategy {
+  private static final Logger logger = LoggerFactory.getLogger(RandomMerge.class);
   private static final Double SIMILARITY_THRESHOLD = 0.7;
   private static final Integer MAX_CONTINUOUS_FAILURE_COUNT = 5;
 
   /**
-   * 随机合并算法
-   * 1. 循环多轮进行，当某轮结束后的森林大小满足要求或者已经连续 MAX_CONTINUOUS_FAILURE_COUNT 轮合并失败，则退出
-   * 2. 每轮随机选择森林中的一棵树，计算其他所有树与它的 embedding 相似度，并从高到底排序
-   * 3. 按照顺序对相似度进行累乘：假设相似度是 x，每次乘实际上是乘 1-(1-x)/2 ，乘积如果不小于 SIMILARITY_THRESHOLD 则继续乘，反之则结束
-   * 4. 如果累计相似度满足要求的树不少于2棵，则进行合并，反之则计为一次合并失败
+   * 随机合并算法 1. 循环多轮进行，当某轮结束后的森林大小满足要求或者已经连续 MAX_CONTINUOUS_FAILURE_COUNT 轮合并失败，则退出 2.
+   * 每轮随机选择森林中的一棵树，计算其他所有树与它的 embedding 相似度，并从高到底排序 3. 按照顺序对相似度进行累乘：假设相似度是 x，每次乘实际上是乘 1-(1-x)/2
+   * ，乘积如果不小于 SIMILARITY_THRESHOLD 则继续乘，反之则结束 4. 如果累计相似度满足要求的树不少于2棵，则进行合并，反之则计为一次合并失败
    *
    * @param root
    */
@@ -28,7 +29,7 @@ public class RandomMerge implements MergeForestStrategy {
     int failureCount = 0; // 记录连续合并失败次数
 
     while (forest.size() > targetTreeCount && failureCount < MAX_CONTINUOUS_FAILURE_COUNT) {
-      System.out.println("beginning new merge, the recent size of forest is: " + forest.size());
+      logger.info("beginning new merge, the recent size of forest is: {}", forest.size());
 
       // 随机选择一个根节点
       TreeNode referenceNode = forest.get(random.nextInt(forest.size()));
@@ -60,7 +61,7 @@ public class RandomMerge implements MergeForestStrategy {
         double similarity =
             EmbeddingUtils.calculateSimilarity(referenceNode.getEmbedding(), node.getEmbedding());
         cumulativeSimilarity *= (0.5 + similarity / 2);
-        System.out.println("now cumulative similarity: " + cumulativeSimilarity);
+        logger.info("now cumulative similarity: {}", cumulativeSimilarity);
 
         if (cumulativeSimilarity >= SIMILARITY_THRESHOLD) {
           selectedNodes.add(node);
@@ -86,16 +87,16 @@ public class RandomMerge implements MergeForestStrategy {
 
         // 重置连续失败计数器
         failureCount = 0;
-        System.out.println("merge success, now forest size is: " + forest.size());
+        logger.info("merge success, now forest size is: {}", forest.size());
       } else {
         // 增加失败计数
         failureCount++;
-        System.out.println("merge failure, now consecutive failure count is: " + failureCount);
+        logger.info("merge failure, now consecutive failure count is: {}", failureCount);
       }
 
       // 判断是否已经到达连续合并失败的最大上限
       if (failureCount >= MAX_CONTINUOUS_FAILURE_COUNT) {
-        System.out.println("The count of consecutive merge failures has reached the limit, stop merge");
+        logger.info("The count of consecutive merge failures has reached the limit, stop merge");
         break;
       }
     }
