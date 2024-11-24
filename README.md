@@ -205,6 +205,7 @@ IGinX Zeppelin 解释器是需要连接 IGinX 的，如果我们重启了 IGinX�
 ##### SHOW COLUMNS 命令
 展示可视化资产图会涉及到embedding，请前往 https://nlp.stanford.edu/projects/glove/ 下载相关模型，解压后放入 /resources/model 文件夹下，并根据模型的embedding维度修改embeddingUtils类中的EMBEDDING_DIMENSION参数。
 ![img](./images/show_columns.png)
+此外，当前选用的模型只支持英文，暂不支持中文。
 
 ### 使用RESTful语句
 

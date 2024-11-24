@@ -1,11 +1,15 @@
 package org.apache.zeppelin.iginx.util;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.zeppelin.iginx.util.algorithm.mergeforest.MergeForestStrategy;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MultiwayTree {
+  private static final Logger logger = LoggerFactory.getLogger(MultiwayTree.class);
   public static final String ROOT_NODE_NAME = "数据资产";
   public static final String ROOT_NODE_PATH = "root";
 
@@ -70,11 +74,19 @@ public class MultiwayTree {
     }
   }
 
-  public static void mergeTree(MultiwayTree tree, String strategy) throws Exception {
-    Class<?> mergeClass =
-        Class.forName("org.apache.zeppelin.iginx.util.algorithm.mergeforest." + strategy);
-    Constructor<?> constructor = mergeClass.getConstructor();
-    MergeForestStrategy mergeForestStrategy = (MergeForestStrategy) constructor.newInstance();
-    mergeForestStrategy.mergeForest(tree.root);
+  public static void mergeTree(MultiwayTree tree, String strategy) {
+    try {
+      Class<?> mergeClass = Class.forName("org.apache.zeppelin.iginx.util.algorithm.mergeforest." + strategy);
+      Constructor<?> constructor = mergeClass.getConstructor();
+      MergeForestStrategy mergeForestStrategy = (MergeForestStrategy) constructor.newInstance();
+      logger.info("begin --" + strategy + "--");
+      mergeForestStrategy.mergeForest(tree.root);
+    } catch (ClassNotFoundException e) {
+      logger.error("error: Could not find class '{}'. Please check if the class name is correct.", strategy, e);
+    } catch (NoSuchMethodException e) {
+      logger.error("error: Could not find a default constructor in class '{}'. Please ensure it has a no-args constructor.", strategy, e);
+    } catch (Exception e) {
+      logger.error("error: Reflection failed. Could not create an instance of class '{}'.", strategy, e);
+    }
   }
 }

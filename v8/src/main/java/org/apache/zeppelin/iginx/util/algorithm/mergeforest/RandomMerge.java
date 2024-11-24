@@ -11,6 +11,15 @@ public class RandomMerge implements MergeForestStrategy {
   private static final Double SIMILARITY_THRESHOLD = 0.7;
   private static final Integer MAX_CONTINUOUS_FAILURE_COUNT = 5;
 
+  /**
+   * 随机合并算法
+   * 1. 循环多轮进行，当某轮结束后的森林大小满足要求或者已经连续 MAX_CONTINUOUS_FAILURE_COUNT 轮合并失败，则退出
+   * 2. 每轮随机选择森林中的一棵树，计算其他所有树与它的 embedding 相似度，并从高到底排序
+   * 3. 按照顺序对相似度进行累乘：假设相似度是 x，每次乘实际上是乘 1-(1-x)/2 ，乘积如果不小于 SIMILARITY_THRESHOLD 则继续乘，反之则结束
+   * 4. 如果累计相似度满足要求的树不少于2棵，则进行合并，反之则计为一次合并失败
+   *
+   * @param root
+   */
   @Override
   public void mergeForest(TreeNode root) {
     List<TreeNode> forest = root.getChildren();
@@ -19,7 +28,7 @@ public class RandomMerge implements MergeForestStrategy {
     int failureCount = 0; // 记录连续合并失败次数
 
     while (forest.size() > targetTreeCount && failureCount < MAX_CONTINUOUS_FAILURE_COUNT) {
-      System.out.println("当前森林的大小为: " + forest.size());
+      System.out.println("beginning new merge, the recent size of forest is: " + forest.size());
 
       // 随机选择一个根节点
       TreeNode referenceNode = forest.get(random.nextInt(forest.size()));
@@ -50,10 +59,10 @@ public class RandomMerge implements MergeForestStrategy {
       for (TreeNode node : otherNodes) {
         double similarity =
             EmbeddingUtils.calculateSimilarity(referenceNode.getEmbedding(), node.getEmbedding());
-        cumulativeSimilarity *= similarity;
-        System.out.println("当前累计相似性: " + cumulativeSimilarity);
+        cumulativeSimilarity *= (0.5 + similarity / 2);
+        System.out.println("now cumulative similarity: " + cumulativeSimilarity);
 
-        if (cumulativeSimilarity > SIMILARITY_THRESHOLD) {
+        if (cumulativeSimilarity >= SIMILARITY_THRESHOLD) {
           selectedNodes.add(node);
         } else {
           break; // 达到阈值，停止继续合并
@@ -77,16 +86,18 @@ public class RandomMerge implements MergeForestStrategy {
 
         // 重置连续失败计数器
         failureCount = 0;
-        System.out.println("合并成功，新森林大小为: " + forest.size());
+        System.out.println("merge success, now forest size is: " + forest.size());
       } else {
         // 增加失败计数
         failureCount++;
-        System.out.println("合并失败，连续失败次数: " + failureCount);
+        System.out.println("merge failure, now consecutive failure count is: " + failureCount);
       }
-    }
 
-    if (failureCount >= MAX_CONTINUOUS_FAILURE_COUNT) {
-      System.out.println("连续合并失败次数已达到上限，停止合并");
+      // 判断是否已经到达连续合并失败的最大上限
+      if (failureCount >= MAX_CONTINUOUS_FAILURE_COUNT) {
+        System.out.println("The count of consecutive merge failures has reached the limit, stop merge");
+        break;
+      }
     }
 
     root.setChildren(forest);

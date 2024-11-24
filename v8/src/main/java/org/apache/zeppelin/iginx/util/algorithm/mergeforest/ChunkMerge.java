@@ -14,6 +14,17 @@ import org.apache.zeppelin.iginx.util.TreeNode;
 public class ChunkMerge implements MergeForestStrategy {
   private static final int THREAD_POOL_SIZE = 8; // 可根据机器配置调整线程数
 
+  /**
+   * 分块合并算法
+   * 1. 循环多轮进行，当某轮结束后的森林大小满足要求，则退出
+   * 2. 每轮按照线程数平均分块，每块中的树分别进行合并，块间互不干扰
+   * 3. 通过 findBestMergeGroup 查找最合适的合并组：块中的所有树通过循环，两两比较，找到 embedding 最相似的两个合并
+   *    (第3步的 findBestMergeGroup 有较大的优化空间，因为有时候多棵树一起合并可能效果更好)
+   *
+   * @param root
+   * @throws ExecutionException
+   * @throws InterruptedException
+   */
   public void mergeForest(TreeNode root) throws ExecutionException, InterruptedException {
     List<TreeNode> forest = root.getChildren();
     int targetTreeCount = (int) Math.ceil(Math.sqrt(forest.size()));
@@ -21,7 +32,7 @@ public class ChunkMerge implements MergeForestStrategy {
     ExecutorService executor = Executors.newFixedThreadPool(THREAD_POOL_SIZE);
 
     while (forest.size() > targetTreeCount) {
-      System.out.println("开始新一轮合并，当前森林大小: " + forest.size());
+      System.out.println("beginning new merge, the recent size of forest is: " + forest.size());
       List<Future<List<TreeNode>>> futureResults = new ArrayList<>();
 
       int chunkSize = Math.max(2, (int) Math.ceil((double) forest.size() / THREAD_POOL_SIZE));
@@ -49,7 +60,6 @@ public class ChunkMerge implements MergeForestStrategy {
   }
 
   private List<TreeNode> mergeChunk(List<TreeNode> chunk) {
-    System.out.println("mergeChunk");
     if (chunk.size() == 1) return chunk;
     List<TreeNode> mergedChunk = new ArrayList<>(chunk);
 
@@ -57,7 +67,7 @@ public class ChunkMerge implements MergeForestStrategy {
 
     if (!nodesToMerge.isEmpty()) {
       String newConceptName = LLMUtils.getConcept(nodesToMerge);
-      System.out.println("newConceptName: " + newConceptName);
+      System.out.println("get new concept name: " + newConceptName);
 
       List<Double> newEmbedding = EmbeddingUtils.getEmbedding(newConceptName);
       TreeNode newParent = new TreeNode(newConceptName, newConceptName, newEmbedding);
@@ -75,7 +85,6 @@ public class ChunkMerge implements MergeForestStrategy {
   }
 
   private List<TreeNode> findBestMergeGroup(List<TreeNode> nodes) {
-    System.out.println("findBestMergeGroup");
     List<TreeNode> bestGroup = new ArrayList<>();
     double bestSimilarity = -1;
 
@@ -86,7 +95,7 @@ public class ChunkMerge implements MergeForestStrategy {
                 nodes.get(i).getEmbedding(), nodes.get(j).getEmbedding());
         if (similarity > bestSimilarity) {
           bestSimilarity = similarity;
-          bestGroup = Arrays.asList(nodes.get(i), nodes.get(j)); // 使用 Arrays.asList 替代 List.of
+          bestGroup = Arrays.asList(nodes.get(i), nodes.get(j));
         }
       }
     }

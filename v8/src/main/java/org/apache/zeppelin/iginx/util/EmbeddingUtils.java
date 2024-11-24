@@ -39,6 +39,15 @@ public class EmbeddingUtils {
     }
   }
 
+  /**
+   * 获取输入内容的 embedding
+   * 1. 直接通过 Map 查找，若找到，直接返回结果
+   * 2. 若找不到，则对输入内容按照 "-", " ", "_" 进行划分，再分别获取 embeddig 并取平均
+   * 3. 若输入的内容找不到且已无法再划分，则随机一个 embedding (固定了随机种子，为了让每次执行的结果一致)
+   *
+   * @param word
+   * @return
+   */
   public static List<Double> getEmbedding(String word) {
     List<Double> embedding = embeddings.get(word);
 
@@ -51,11 +60,12 @@ public class EmbeddingUtils {
         for (String part : parts) {
           List<Double> partEmbedding = embeddings.get(part);
           if (partEmbedding != null) {
-            sumEmbedding.addAll(partEmbedding);
-            sum += 1; // 用于计算平均值
+            for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
+              sumEmbedding.set(i, sumEmbedding.get(i) + partEmbedding.get(i)); // 按维度累加
+            }
+            sum += 1;
           }
         }
-        // 如果至少找到一个部分的向量，计算平均向量
         for (int i = 0; i < EMBEDDING_DIMENSION; i++) {
           sumEmbedding.set(i, sumEmbedding.get(i) / sum);
         }
@@ -63,7 +73,7 @@ public class EmbeddingUtils {
       } else {
         // 如果所有部分都未找到且不可拆分，生成随机向量
         embedding = generateRandomVector(EMBEDDING_DIMENSION);
-        System.out.println("单词 '" + word + "' 未找到，生成随机向量替代。");
+        logger.info("fail to find the embedding of '" + word + "', generating Random Vector to replace");
       }
     }
     return embedding;

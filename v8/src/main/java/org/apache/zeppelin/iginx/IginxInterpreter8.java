@@ -37,12 +37,8 @@ import org.apache.zeppelin.iginx.util.HttpUtil;
 import org.apache.zeppelin.iginx.util.MultiwayTree;
 import org.apache.zeppelin.iginx.util.SqlCmdUtil;
 import org.apache.zeppelin.interpreter.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class IginxInterpreter8 extends Interpreter {
-  private static final Logger LOGGER = LoggerFactory.getLogger(IginxInterpreter8.class);
-
   private static final String IGINX_HOST = "iginx.host";
   private static final String IGINX_PORT = "iginx.port";
   private static final String IGINX_USERNAME = "iginx.username";
@@ -392,13 +388,12 @@ public class IginxInterpreter8 extends Interpreter {
       while ((line = br.readLine()) != null) {
         mainHtml.append(line).append("\n");
       }
-      logger.info("buildNetworkForShowColumns: mainHtml is: {}", mainHtml);
       return mainHtml
           .toString()
           .replace("FILE_HOST", fileHttpHost)
           .replace("FILE_PORT", String.valueOf(fileHttpPort));
     } catch (IOException e) {
-      LOGGER.warn("load show columns to tree error", e);
+      logger.warn("load show columns to tree error", e);
     }
     return "";
   }
@@ -424,7 +419,7 @@ public class IginxInterpreter8 extends Interpreter {
     InterpreterResult interpreterResult;
     String uploadParagraphKey = context.getParagraphId() + "_UPLOAD_FILE";
     /* response upload file form, user will rerun paragraph when upload finished. */
-    LOGGER.info("+++++++Id={}, paragraphId={}", context.getNoteId(), uploadParagraphKey);
+    logger.info("+++++++Id={}, paragraphId={}", context.getNoteId(), uploadParagraphKey);
     if (!uploadParagraphSet.contains(uploadParagraphKey)) {
       try (InputStream inputStream =
               IginxInterpreter8.class.getClassLoader().getResourceAsStream("uploadForm.html");
@@ -445,13 +440,13 @@ public class IginxInterpreter8 extends Interpreter {
         uploadParagraphSet.add(uploadParagraphKey);
         return interpreterResult;
       } catch (IOException e) {
-        LOGGER.error("load html error", e);
+        logger.error("load html error", e);
       }
       return new InterpreterResult(InterpreterResult.Code.ERROR);
     }
 
     try {
-      LOGGER.info("load data sql execute, sql={}", sql);
+      logger.info("load data sql execute, sql={}", sql);
       SessionExecuteSqlResult res = session.executeSql(sql);
       String parseErrorMsg = res.getParseErrorMsg();
       if (parseErrorMsg != null && !parseErrorMsg.isEmpty()) {
@@ -510,11 +505,11 @@ public class IginxInterpreter8 extends Interpreter {
     String path;
     Path pathObj;
     if (SystemUtils.IS_OS_WINDOWS) {
-      LOGGER.info("current os is Windows");
+      logger.info("current os is Windows");
       path = inputPath.replace("/", "\\");
       pathObj = Paths.get(path);
     } else {
-      LOGGER.info("current os is Linux or Mac");
+      logger.info("current os is Linux or Mac");
       path = inputPath.replace("\\", "/");
       pathObj = Paths.get(path);
     }
@@ -523,7 +518,7 @@ public class IginxInterpreter8 extends Interpreter {
         HttpUtil.getCurrentPath(DEFAULT_UPLOAD_DIR)
             + File.separator
             + pathObj.getFileName().toString();
-    LOGGER.info("converted path is {}", path);
+    logger.info("converted path is {}", path);
     return path;
   }
 
@@ -1057,7 +1052,7 @@ public class IginxInterpreter8 extends Interpreter {
     } else {
       hTagNumber = 6;
     }
-    LOGGER.info(
+    logger.info(
         "NoteId={},ParagraphId={},fontSizeEnable={},fontSize={}",
         context.getNoteId(),
         context.getParagraphId(),
@@ -1069,7 +1064,7 @@ public class IginxInterpreter8 extends Interpreter {
         message.stream()
             .map(
                 item -> {
-                  LOGGER.debug("type={},data={}", item.getType(), item.getData());
+                  logger.debug("type={},data={}", item.getType(), item.getData());
                   if (item.getType().equals(InterpreterResult.Type.TABLE)) {
                     String collect =
                         Arrays.stream(item.getData().split(NEWLINE))
@@ -1098,7 +1093,7 @@ public class IginxInterpreter8 extends Interpreter {
                         item.getType(),
                         String.format("<h%d>%s</h%d>", hTagNumber, item.getData(), hTagNumber));
                   } else {
-                    LOGGER.warn("unexpected result type {}", item.getType());
+                    logger.warn("unexpected result type {}", item.getType());
                   }
                   return new InterpreterResultMessage(item.getType(), item.getData());
                 })
