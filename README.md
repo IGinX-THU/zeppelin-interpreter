@@ -220,3 +220,8 @@ select * from table into outfile "path" as stream;（默认不展示图片，仅
 select * from table into outfile "path" as stream showimg true;（展示fs中的图片，并提供文件下载链接）
 select * from table into outfile "path" as stream showimg false;（仅提供文件下载链接）
 ```
+### 命令结果图形化展示
+在查询语句前增加'>graph.tree' 可激活命令结果可视化页面，查询结果第一列必须是以点号分隔的Path（参考show columns;）。
+```shell
+>graph.tree1 select * from (show columns);
+```
