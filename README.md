@@ -225,3 +225,7 @@ select * from table into outfile "path" as stream showimg false;（仅提供文�
 ```shell
 >graph.tree select * from (show columns);
 ```
+### 展示图表时，KEY列根据命令参数>print.key.time转成时间戳，默认时长整型
+```shell
+>print.key.time select * from *;
+```
