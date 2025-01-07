@@ -1160,10 +1160,7 @@ public class IginxInterpreter8 extends Interpreter {
                 PARAGRAPH_ID,
                 context.getParagraphId(),
                 FONT_SIZE,
-                fontSize + "pt"));
-        // 非table图表字体
-        styles.append(
-            FileUtil.renderingHtml("static/highcharts/fontSize.css", FONT_SIZE, fontSize + "pt"));
+                String.valueOf(fontSize)));
       } else if (message.get(i).getType().equals(InterpreterResult.Type.TEXT)) {
         scripts.append(
             FileUtil.renderingHtml(
@@ -1173,7 +1170,7 @@ public class IginxInterpreter8 extends Interpreter {
                 PARAGRAPH_ID,
                 context.getParagraphId(),
                 FONT_SIZE,
-                fontSize + "pt"));
+                String.valueOf(fontSize)));
       } else {
         LOGGER.debug("Not supported {} settings.", InterpreterResult.Type.TEXT);
       }
