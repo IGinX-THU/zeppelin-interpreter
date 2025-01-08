@@ -1,20 +1,32 @@
 package org.apache.zeppelin.iginx.util;
 
+import com.alibaba.fastjson2.annotation.JSONField;
 import java.util.*;
 
 public class NetworkTreeNode {
+  @JSONField(serialize = true)
   private String id;
+
+  @JSONField(serialize = true)
   private String name;
+
   private String parent;
   private Map<String, NetworkTreeNode> children = new HashMap<>();
+
+  @JSONField(serialize = true)
   private int depth;
+
   private List<Double> embedding;
+  private Boolean isExpanded;
+  private Boolean isShown;
 
   public NetworkTreeNode(String id, String name, String parent, int depth) {
     this.id = id;
     this.name = name;
     this.parent = parent;
     this.depth = depth;
+    this.isExpanded = false;
+    isShown = false;
   }
 
   public String getId() {
@@ -63,6 +75,22 @@ public class NetworkTreeNode {
 
   public void setEmbedding(List<Double> embedding) {
     this.embedding = embedding;
+  }
+
+  public Boolean getExpanded() {
+    return isExpanded;
+  }
+
+  public void setExpanded(Boolean expanded) {
+    isExpanded = expanded;
+  }
+
+  public Boolean getShown() {
+    return isShown;
+  }
+
+  public void setShown(Boolean shown) {
+    isShown = shown;
   }
 
   @Override

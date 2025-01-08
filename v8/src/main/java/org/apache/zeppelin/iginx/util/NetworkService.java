@@ -3,8 +3,9 @@ package org.apache.zeppelin.iginx.util;
 import cn.edu.tsinghua.iginx.session.Session;
 import cn.edu.tsinghua.iginx.session.SessionExecuteSqlResult;
 import cn.edu.tsinghua.iginx.utils.FormatUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.alibaba.fastjson2.JSON;
+import com.alibaba.fastjson2.JSONArray;
+import com.alibaba.fastjson2.JSONObject;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,12 +50,50 @@ public class NetworkService {
     LOGGER.info("{} {} {}", needMerge, needRelation, paragraphId);
     root = new NetworkTreeNode("rootId", "数据资产", null, 0);
     buildForest(root, columnPath);
-    LOGGER.info("before merge, the size is：{}", root.getChildren().size());
     if (needMerge) {
+      LOGGER.info("before merge, the size is：{}", root.getChildren().size());
       mergeForest(root);
+      LOGGER.info("after merge, the size is：{}", root.getChildren().size());
     }
-    LOGGER.info("after merge, the size is：{}", root.getChildren().size());
-    return null;
+    List<NetworkTreeNode> nodeList = new ArrayList<>();
+    nodeList.add(root);
+    root.setExpanded(true);
+    root.setShown(true);
+    for (NetworkTreeNode childNode : root.getChildren().values()) {
+      childNode.setShown(true);
+      nodeList.add(childNode);
+    }
+    String jsonString = JSON.toJSONString(nodeList);
+    LOGGER.info("the jsonString is {}", jsonString);
+    return loadHtmlTemplate().replace("NODE_LIST", jsonString);
+  }
+
+  public String handleNodeClick(String nodeId) {
+    long startTime = System.currentTimeMillis();
+    LOGGER.info("handleNodeClick");
+    NetworkTreeNode node = getNodeById(nodeId);
+    if (node == null) {
+      LOGGER.error("Node not found for id: {}", nodeId);
+      return "{}";
+    }
+
+    JSONObject result = new JSONObject();
+    JSONObject addMap = new JSONObject();
+    JSONObject removeMap = new JSONObject();
+
+    if (node.getExpanded()) {
+      collapseNode(node, removeMap);
+      node.setExpanded(false);
+    } else {
+      expandNode(node, addMap);
+      node.setExpanded(true);
+    }
+
+    result.put("add", addMap);
+    result.put("remove", removeMap);
+    long endTime = System.currentTimeMillis();
+    LOGGER.info("handleNodeClick run time：" + (endTime - startTime) + "ms");
+    return result.toString();
   }
 
   // todo:后续改为多线程并行
@@ -97,10 +136,9 @@ public class NetworkService {
       return;
     }
     String str = "";
-    ObjectMapper objectMapper = new ObjectMapper();
     try {
-      str = objectMapper.writeValueAsString(result);
-    } catch (JsonProcessingException e) {
+      str = JSON.toJSONString(result);
+    } catch (Exception e) {
       LOGGER.error("JSON fail", e);
     }
     List<List<String>> queryList = null;
@@ -188,5 +226,59 @@ public class NetworkService {
       LOGGER.warn("load show columns to network error", e);
     }
     return htmlTemplate;
+  }
+
+  private NetworkTreeNode getNodeById(String nodeId) {
+    String[] ids = nodeId.split("\\.");
+    NetworkTreeNode currentNode = root;
+    for (int i = 1; i < ids.length; i++) {
+      currentNode = currentNode.getChildren().get(ids[i]);
+      if (currentNode == null) return null;
+    }
+    return currentNode;
+  }
+
+  private void expandNode(NetworkTreeNode node, JSONObject addMap) {
+    JSONArray nodes = new JSONArray();
+    JSONArray edges = new JSONArray();
+    JSONArray links = new JSONArray();
+
+    for (NetworkTreeNode child : node.getChildren().values()) {
+      child.setShown(true);
+      JSONObject nodeData = new JSONObject();
+      nodeData.put("id", child.getId());
+      nodeData.put("name", child.getName());
+      nodeData.put("depth", child.getDepth());
+      nodes.add(nodeData);
+
+      JSONObject edgeData = new JSONObject();
+      edgeData.put("from", node.getId());
+      edgeData.put("to", child.getId());
+      edges.add(edgeData);
+    }
+
+    addMap.put("nodes", nodes);
+    addMap.put("edges", edges);
+    addMap.put("links", links);
+  }
+
+  private void collapseNode(NetworkTreeNode node, JSONObject removeMap) {
+    JSONArray nodes = new JSONArray();
+    for (NetworkTreeNode child : node.getChildren().values()) {
+      collectShownNodes(child, nodes);
+    }
+    removeMap.put("nodes", nodes);
+  }
+
+  private void collectShownNodes(NetworkTreeNode node, JSONArray nodes) {
+    if (node.getShown()) {
+      JSONObject nodeData = new JSONObject();
+      nodeData.put("id", node.getId());
+      nodes.add(nodeData);
+      node.setShown(false);
+      for (NetworkTreeNode child : node.getChildren().values()) {
+        collectShownNodes(child, nodes); // 递归处理
+      }
+    }
   }
 }

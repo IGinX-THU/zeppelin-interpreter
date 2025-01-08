@@ -69,19 +69,30 @@
         });
     }
 
+    function loadCSS(href) {
+        return new Promise((resolve, reject) => {
+            const link = document.createElement('link');
+            link.rel = 'stylesheet';
+            link.href = href;
+            link.onload = resolve;
+            link.onerror = reject;
+            document.head.appendChild(link);
+        });
+    }
+
     async function init() {
         try {
             // 加载资源
             await loadLibrary('https://unpkg.com/vis-network@9.1.9/standalone/umd/vis-network.min.js');
+            await loadCSS('https://unpkg.com/vis-network@9.1.9/styles/vis-network.min.css');
             await loadLibrary('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js');
+            await loadCSS('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css');
             await loadLibrary('https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js');
 
-            const allNodesStr = 'NODE_LIST';
-            const allNodes = JSON.parse(allNodesStr);
+            const topNodesStr = 'NODE_LIST';
+            const topNodes = JSON.parse(topNodesStr);
 
-            const rootNodes = allNodes.filter(node => node.depth === 1);
             let network;
-            let relationHash = {};
             let nodes = [];
             let edges = [];
             let data = {
@@ -89,71 +100,31 @@
                 edges: new vis.DataSet(edges)
             };
 
-
-            // 初始化根节点
+            // 初始化network的数据
             function initializeGraph() {
-                allNodes.forEach(item => {
-                    if (item.depth === 0) {
-                        data.nodes.add({
-                            id: item.id,
-                            label: item.name || "数据资产",
-                            font: { size: 20 },
-                            color: '#97c2fc',
-                            shape: 'ellipse'
-                        });
-                        expandNode(item.id);
-                        isExpanded[item.id] = true;
-                    }
+                const rootNode = topNodes[0];
+                data.nodes.add({
+                    id: rootNode.id,
+                    label: rootNode.name || "数据资产",
+                    font: { size: 20 },
+                    color: getColorByDepth(rootNode.depth),
+                    shape: 'ellipse'
                 });
-            }
 
-            // 扩展结点
-            function expandNode(parentId) {
-                const childNodes = allNodes.filter(item => item.parent === parentId);
-                let edgesToAdd = [];
-                childNodes.forEach(child => {
-                    if (!data.nodes.get(child.id)) {
-                        data.nodes.add({
-                            id: child.id,
-                            label: child.name,
-                            depth: child.depth,
-                            parent: child.parent,
-                            embedding: child.embedding,
-                            font: {size: 20},
-                            color: getColorByDepth(child.depth),
-                            shape: 'ellipse'
-                        });
-                    }
-                    edgesToAdd.push({
-                        from: parentId,
-                        to: child.id,
+                for (let i = 1; i < topNodes.length; i++) {
+                    const childNode = topNodes[i];
+                    data.nodes.add({
+                        id: childNode.id,
+                        label: childNode.name,
+                        font: { size: 20 },
+                        color: getColorByDepth(childNode.depth),
+                        shape: 'ellipse'
+                    });
+                    data.edges.add({
+                        from: rootNode.id,
+                        to: childNode.id,
                         arrows: 'to'
                     });
-                });
-                data.edges.add(edgesToAdd);
-                columnNodesCache[parentId] = childNodes.map(child => child.id);
-                isExpanded[parentId] = true;
-                if (RELATION_SWITCH) {
-                    const parent = data.nodes.get(parentId);
-                    calculateNodeRelations(parent);
-                }
-            }
-
-            // 收缩结点
-            function collapseNode(parentId) {
-                const childNodeIds = columnNodesCache[parentId] || [];
-                childNodeIds.forEach(childId => {
-                    collapseNode(childId);
-                    data.nodes.remove(childId);
-                });
-                data.edges.forEach(edge => {
-                    if (edge.from === parentId) {
-                        data.edges.remove(edge.id);
-                    }
-                });
-                isExpanded[parentId] = false;
-                if (RELATION_SWITCH) {
-                    analyzeRelations();
                 }
             }
 
@@ -191,16 +162,49 @@
                 network = new vis.Network(container, data, options);
 
                 // 绑定双击事件
-                network.on('doubleClick', function (params) {
+                network.on('doubleClick', async function (params) {
                     if (params.nodes.length > 0) {
                         const nodeId = params.nodes[0];
-                        if (isExpanded[nodeId]) {
-                            collapseNode(nodeId);
-                        } else {
-                            expandNode(nodeId);
-                        }
+                        await handleNodeClickWithThrottle(nodeId);
                     }
                 });
+            }
+
+            let lastClickTime = 0;
+            const throttleDelay = 1000;  // 节流间隔
+
+            // 节流函数
+            async function handleNodeClickWithThrottle(nodeId) {
+                const now = Date.now();
+                if (now - lastClickTime > throttleDelay) {
+                    lastClickTime = now;
+                    await handleNodeClick(nodeId);
+                    const runTime = Date.now() - now;
+                    console.log("handleNodeClick run time for " + nodeId + " is: " + runTime + "ms");
+                } else {
+                    showFrequentClickAlert();
+                }
+            }
+
+            // 弹出提示框函数
+            function showFrequentClickAlert() {
+                console.log("showFrequentClickAlert");
+                const alertBox = document.createElement('div');
+                alertBox.style.position = 'fixed';
+                alertBox.style.top = '20px';
+                alertBox.style.left = '50%';
+                alertBox.style.transform = 'translateX(-50%)';
+                alertBox.style.padding = '10px';
+                alertBox.style.backgroundColor = '#f44336';
+                alertBox.style.color = '#fff';
+                alertBox.style.fontSize = '16px';
+                alertBox.style.borderRadius = '5px';
+                alertBox.style.zIndex = '1000';
+                alertBox.innerText = '点击过于频繁';
+                document.body.appendChild(alertBox);
+                setTimeout(() => {
+                    alertBox.remove();
+                }, 1000);
             }
 
             // 修改节点的颜色根据深度设置
@@ -232,21 +236,6 @@
                 });
             }
 
-            // 绘制结点间额外关系的边
-            function drawLinks(links) {
-                links.forEach(link => {
-                    data.edges.add({
-                        id: `${link.from}->${link.to}`,
-                        from: link.from,
-                        to: link.to,
-                        arrows: "",
-                        color: "red",
-                        label: link.relation,
-                        font: { align: "top" }
-                    });
-                });
-            }
-
             // 初始化图形
             initializeGraph();
             drawGraph();
@@ -266,6 +255,145 @@
                 }
             });
 
+            const baseUrl = 'http://ZEPPELIN_SERVER:ZEPPELIN_PORT/api/notebook'
+            async function getParagraphId(noteId) {
+                const response = await fetch(baseUrl + `/${noteId}`);
+                const data = await response.json();
+                return data.body.paragraphs.at(-1).id;
+            }
+
+            async function updateParagraph(noteId, paragraphId, query) {
+                const response = await fetch(baseUrl + `/${noteId}/paragraph/${paragraphId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        title: "Updated Paragraph",
+                        text: query,
+                    })
+                });
+                return response.json();
+            }
+
+            async function executeParagraph(noteId, paragraphId) {
+                const response = await fetch(baseUrl + `/job/${noteId}/${paragraphId}`, {
+                    method: 'POST',
+                });
+                return response.json();
+            }
+
+            async function getParagraphResult(noteId, paragraphId) {
+                let response;
+                let data;
+                let status = 'RUNNING';
+
+                while (status === 'RUNNING') {
+                    response = await fetch(baseUrl + `/${noteId}/paragraph/${paragraphId}`);
+                    data = await response.json();
+                    status = data.body.status;
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+                return data.body.results.msg[0].data;
+            }
+
+            async function handleNodeClick(nodeId) {
+                const noteId = 'NOTE_ID';
+                const paragraphId = 'PARAGRAPH_ID';
+                const query = 'handle_html_node_click ' + paragraphId + ' ' + nodeId;
+                // 1. 获取最后一个段落的id
+                const lastParagraphId = await getParagraphId(noteId);
+                console.log("getParagraphId: " + lastParagraphId);
+                // 2. 更新段落内容
+                await updateParagraph(noteId, lastParagraphId, query);
+                console.log("updateParagraph");
+                // 3. 执行段落
+                await executeParagraph(noteId, lastParagraphId);
+                console.log("executeParagraph");
+                // 4. 获取段落执行结果
+                const resultString  = await getParagraphResult(noteId, lastParagraphId);
+                console.log("getParagraphResult");
+                // 5. 恢复段落
+                await updateParagraph(noteId, lastParagraphId, "clearParagraph");
+                await executeParagraph(noteId, lastParagraphId);
+                await updateParagraph(noteId, lastParagraphId, "");
+                console.log("clearParagraph");
+                // 6. 处理返回的result
+                console.log(nodeId + '的点击结果:', resultString );
+                let result = {};
+                try {
+                    result = JSON.parse(resultString);
+                } catch (e) {
+                    console.error("解析 JSON 失败:", e);
+                    return;
+                }
+                await handleResult(result);
+            }
+
+            function handleResult(result) {
+                console.log("begin handleResult");
+                clearRelation();
+                if (result && result.add) {
+                    console.log("handle add");
+                    // 处理 add 中的 nodes
+                    if (result.add.nodes) {
+                        result.add.nodes.forEach(node => {
+                            data.nodes.add({
+                                id: node.id,
+                                label: node.name,
+                                font: { size: 20 },
+                                color: getColorByDepth(node.depth),
+                                shape: 'ellipse'
+                            });
+                        });
+                    }
+
+                    // 处理 add 中的 edges
+                    if (result.add.edges) {
+                        result.add.edges.forEach(edge => {
+                            data.edges.add({
+                                from: edge.from,
+                                to: edge.to,
+                                arrows: 'to'
+                            });
+                        });
+                    }
+
+                    // 处理 add 中的 links
+                    if (result.add.links) {
+                        result.add.links.forEach(link => {
+                            data.edges.add({
+                                id: `${link.from}->${link.to}`,
+                                from: link.from,
+                                to: link.to,
+                                arrows: "",
+                                color: "red",
+                                label: link.relation,
+                                font: { align: "top" }
+                            });
+                        });
+                    }
+                }
+
+                if (result && result.remove) {
+                    console.log("handle remove");
+                    // 处理 remove 中的 nodes
+                    if (result.remove.nodes) {
+                        result.remove.nodes.forEach(node => {
+                            data.nodes.remove(node.id);
+                            // 删除掉对应的 edges
+                            const edgesToRemove = data.edges.get().filter(edge => edge.to === node.id);
+                            edgesToRemove.forEach(edge => {
+                                data.edges.remove(edge.id);
+                            });
+                        });
+                    }
+                }
+
+                console.log("处理完后的data为：")
+                console.log(data.nodes.get());
+                console.log(data.edges.get());
+            }
         } catch (error) {
             console.error('加载过程中出错:', error);
         }

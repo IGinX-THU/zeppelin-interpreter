@@ -129,6 +129,7 @@ public class IginxInterpreter8 extends Interpreter {
           SqlType.ShowRegisterTask);
 
   private static Map<String, NetworkService> networkMap = new HashMap<>();
+  private Boolean needAddHideResult = true;
 
   // 定义html模板中的占位符
   private static final String OUTPUT_TYPE = "OUTPUT_TYPE";
@@ -264,6 +265,7 @@ public class IginxInterpreter8 extends Interpreter {
 
     CompletableFuture.runAsync(
         () -> {
+          this.needAddHideResult = true;
           InterpreterResult interpreterResult = null;
           for (String cmd : sqlList) {
             interpreterResult = processSql(cmd, context);
@@ -278,10 +280,9 @@ public class IginxInterpreter8 extends Interpreter {
               }
             }
           }
-          addHideResult(interpreterResult, context);
+          if (needAddHideResult) addHideResult(interpreterResult, context);
           future.complete(interpreterResult);
         });
-
     return future;
   }
 
@@ -304,6 +305,10 @@ public class IginxInterpreter8 extends Interpreter {
         return processLoadCsv(sql, context);
       } else if (isCreateFunction(sql.toLowerCase())) {
         return processCreateFunction(sql);
+      } else if (isHandelHtmlNodeClick(sql.toLowerCase())) {
+        return processHandelHtmlNodeClick(sql);
+      } else if (isHandelHtmlClearParagraph(sql)) {
+        return processHandelHtmlClearParagraph();
       }
 
       SessionExecuteSqlResult sqlResult = session.executeSql(sql);
@@ -414,93 +419,62 @@ public class IginxInterpreter8 extends Interpreter {
             queryList,
             session);
     networkMap.put(context.getParagraphId(), networkService);
-    String html = networkService.initNetwork();
-    return html;
+    // todo:"ZEPPELIN_SERVER" 和 "ZEPPELIN_PORT" 的替换需要改为实际的
+    String html =
+        networkService
+            .initNetwork()
+            .replace("PARAGRAPH_ID", context.getParagraphId())
+            .replace("NOTE_ID", context.getNoteId())
+            .replace("ZEPPELIN_SERVER", "localhost")
+            .replace("ZEPPELIN_PORT", "8100");
 
-    //    String jsonString = "";
-    //    Boolean getRelation = false;
-    //    // 如果第0行的第1列是"DataType"，说明是直接调用的show columns/select * from (show
-    //    // columns)，这种情况下只展示图状结构，不会获取结点间特殊关系并展示
-    //    if (queryList.get(0).get(1).equals("DataType")) {
-    //      MultiwayTree tree = MultiwayTree.getMultiwayTree();
-    //      queryList
-    //          .subList(1, queryList.size())
-    //          .forEach(
-    //              row -> {
-    //                MultiwayTree.addTreeNodeFromString(tree, row.get(0));
-    //              });
-    //      List<HighchartsTreeNode> nodeList = new ArrayList<>();
-    //      tree.traverseToHighchartsTreeNodes(tree.getRoot(), nodeList);
-    //      jsonString = JSON.toJSONString(nodeList);
-    //    } else { // 否则，则是调用的UDF，例如 select udf(*) from (show columns)，会获取结点间的特殊关系并展示。
-    //      // 目前调用udf后返回的第0列为"path"，第1列为"name"，第2列为"parent"，第3列为"depth",第4列为"embedding"
-    //      LOGGER.info("buildNetworkForShowColumns: use udf");
-    //      List<NetworkTreeNode> nodeList = new ArrayList<>();
-    //      queryList
-    //          .subList(1, queryList.size())
-    //          .forEach(
-    //              row -> {
-    //                List<Double> embedding = new ArrayList<>();
-    //                if (!row.get(4).isEmpty()) {
-    //                  String[] embeddingParts = row.get(4).split(",");
-    //                  for (String part : embeddingParts) {
-    //                    embedding.add(Double.parseDouble(part));
-    //                  }
-    //                }
-    //                String id;
-    //                if (row.get(0).isEmpty()) {
-    //                  id = "rootId";
-    //                } else {
-    //                  id = "rootId." + row.get(0);
-    //                }
-    //                String parentId = "";
-    //                if (row.get(2).isEmpty()) {
-    //                  parentId = "rootId";
-    //                } else if (!row.get(2).equals("undefined")) {
-    //                  parentId = "rootId." + row.get(2);
-    //                }
-    //                nodeList.add(
-    //                    new NetworkTreeNode(
-    //                        id, row.get(1), parentId, Integer.parseInt(row.get(3)), embedding));
-    //              });
-    //      LOGGER.info("buildNetworkForShowColumns: finish add rootId");
-    //      jsonString = JSON.toJSONString(nodeList);
-    //      getRelation = true;
-    //      // 把有关embedding的列以及data assets的行去掉，避免在显示表格的时候出现
-    //      queryList.forEach(
-    //          subList -> {
-    //            if (!subList.isEmpty()) {
-    //              subList.remove(subList.size() - 1);
-    //            }
-    //          });
-    //      queryList.remove(1);
-    //    }
-    //
-    //    String htmlTemplate = "static/vis/network.html";
-    //    try (InputStream inputStream =
-    //        this.getClass().getClassLoader().getResourceAsStream(htmlTemplate)) {
-    //      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-    //      StringBuilder content = new StringBuilder();
-    //      String line;
-    //      while ((line = reader.readLine()) != null) {
-    //        content.append(line).append("\n");
-    //      }
-    //      String html =
-    //          content
-    //              .toString()
-    //              .replace("PARAGRAPH_ID", paragraphId)
-    //              .replace("NODE_LIST", jsonString)
-    //              .replace("GET_RELATION", String.valueOf(getRelation));
-    //
-    //      String fileName = paragraphId + "_network.html";
-    //      // 写入文件服务器paragraphID_network.html
-    //      String targetPath = outfileDir + "/graphs/network/" + fileName;
-    //      FileUtil.writeFile(html, targetPath);
-    //      return html;
-    //    } catch (IOException e) {
-    //      LOGGER.warn("load show columns to network error", e);
-    //    }
-    //    return "";
+    String filePath = "D:\\test.html";
+    File file = new File(filePath);
+    try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+      writer.write(html);
+      System.out.println("HTML content has been written to " + filePath);
+    } catch (IOException e) {
+      System.err.println("Error writing to file: " + e.getMessage());
+    }
+
+    return html;
+  }
+
+  private static boolean isHandelHtmlNodeClick(String sql) {
+    return sql.startsWith("handle_html_node_click");
+  }
+
+  private InterpreterResult processHandelHtmlNodeClick(String sql) {
+    LOGGER.info("enter processHandelHtmlNodeClick, the sql is {}", sql);
+    InterpreterResult interpreterResult;
+    String[] strings = sql.split(" ");
+    String paragraphId = strings[1];
+    String nodeId = strings[2];
+    NetworkService networkService = networkMap.get(paragraphId);
+    if (networkService == null) {
+      interpreterResult =
+          new InterpreterResult(
+              InterpreterResult.Code.ERROR,
+              "the networkService with paragraphId: " + paragraphId + " is null");
+      return interpreterResult;
+    }
+    String msg = networkService.handleNodeClick(nodeId);
+    LOGGER.info("processHandelHtmlNodeClick: msg is {}", msg);
+
+    interpreterResult = new InterpreterResult(InterpreterResult.Code.SUCCESS);
+    interpreterResult.add(InterpreterResult.Type.TEXT, msg);
+    this.needAddHideResult = false;
+    return interpreterResult;
+  }
+
+  private static boolean isHandelHtmlClearParagraph(String sql) {
+    return sql.equals("clearParagraph");
+  }
+
+  private InterpreterResult processHandelHtmlClearParagraph() {
+    InterpreterResult interpreterResult = new InterpreterResult(InterpreterResult.Code.SUCCESS);
+    interpreterResult.add(InterpreterResult.Type.TEXT, "");
+    return interpreterResult;
   }
 
   private static boolean isLoadDataFromCsv(String sql) {
