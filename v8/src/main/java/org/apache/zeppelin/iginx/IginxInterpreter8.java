@@ -30,6 +30,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.apache.zeppelin.iginx.service.NetworkService;
 import org.apache.zeppelin.iginx.util.*;
 import org.apache.zeppelin.iginx.util.HttpUtil;
 import org.apache.zeppelin.iginx.util.SqlCmdUtil;
@@ -432,9 +433,9 @@ public class IginxInterpreter8 extends Interpreter {
     File file = new File(filePath);
     try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
       writer.write(html);
-      System.out.println("HTML content has been written to " + filePath);
+      LOGGER.info("HTML content has been written to {}", filePath);
     } catch (IOException e) {
-      System.err.println("Error writing to file: " + e.getMessage());
+      LOGGER.info("Error writing to file: {}", e.getMessage());
     }
 
     return html;

@@ -4,29 +4,45 @@ import com.alibaba.fastjson2.annotation.JSONField;
 import java.util.*;
 
 public class NetworkTreeNode {
-  @JSONField(serialize = true)
   private String id;
-
-  @JSONField(serialize = true)
   private String name;
 
-  private String parent;
+  @JSONField(serialize = false)
   private Map<String, NetworkTreeNode> children = new HashMap<>();
 
-  @JSONField(serialize = true)
   private int depth;
 
-  private List<Double> embedding;
+  @JSONField(serialize = false)
+  private String mergedRoot;
+
+  @JSONField(serialize = false)
+  private List<Float> embedding;
+
+  @JSONField(serialize = false)
   private Boolean isExpanded;
+
+  @JSONField(serialize = false)
   private Boolean isShown;
 
-  public NetworkTreeNode(String id, String name, String parent, int depth) {
+  public NetworkTreeNode(String id, String name, int depth) {
     this.id = id;
     this.name = name;
-    this.parent = parent;
     this.depth = depth;
     this.isExpanded = false;
-    isShown = false;
+    this.isShown = false;
+  }
+
+  public String getNetworkId() {
+    if (mergedRoot == null) return id;
+    else {
+      String[] parts = id.split("\\.", 2);
+      return parts[0] + "." + mergedRoot + "." + parts[1];
+    }
+  }
+
+  public String getEmbeddingId() {
+    String[] parts = id.split("\\.", 2);
+    return parts.length > 1 ? parts[1] : "";
   }
 
   public String getId() {
@@ -45,14 +61,6 @@ public class NetworkTreeNode {
     this.name = name;
   }
 
-  public String getParent() {
-    return parent;
-  }
-
-  public void setParent(String parent) {
-    this.parent = parent;
-  }
-
   public Map<String, NetworkTreeNode> getChildren() {
     return children;
   }
@@ -62,18 +70,30 @@ public class NetworkTreeNode {
   }
 
   public int getDepth() {
-    return depth;
+    if (mergedRoot == null) {
+      return depth;
+    } else {
+      return depth + 1;
+    }
   }
 
   public void setDepth(int depth) {
     this.depth = depth;
   }
 
-  public List<Double> getEmbedding() {
+  public String getMergedRoot() {
+    return mergedRoot;
+  }
+
+  public void setMergedRoot(String mergedRoot) {
+    this.mergedRoot = mergedRoot;
+  }
+
+  public List<Float> getEmbedding() {
     return embedding;
   }
 
-  public void setEmbedding(List<Double> embedding) {
+  public void setEmbedding(List<Float> embedding) {
     this.embedding = embedding;
   }
 
@@ -105,9 +125,6 @@ public class NetworkTreeNode {
         .append('\'')
         .append(", name='")
         .append(name)
-        .append('\'')
-        .append(", parent='")
-        .append(parent)
         .append('\'')
         .append(", depth=")
         .append(depth);

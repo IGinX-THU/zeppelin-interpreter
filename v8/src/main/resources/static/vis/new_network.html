@@ -92,6 +92,9 @@
             const topNodesStr = 'NODE_LIST';
             const topNodes = JSON.parse(topNodesStr);
 
+            const topRelationStr = 'RELATION_LIST';
+            const topRelations = JSON.parse(topRelationStr);
+
             let network;
             let nodes = [];
             let edges = [];
@@ -125,6 +128,19 @@
                         to: childNode.id,
                         arrows: 'to'
                     });
+                }
+
+                for (let i = 0; i < topRelations.length; i++) {
+                    const link = topRelations[i];
+                    data.edges.add({
+                        id: `${link.from}->${link.to}`,
+                        from: link.from,
+                        to: link.to,
+                        arrows: "",
+                        color: "red",
+                        label: link.relation,
+                        font: { align: "top" }
+                    })
                 }
             }
 
@@ -189,21 +205,9 @@
             // 弹出提示框函数
             function showFrequentClickAlert() {
                 console.log("showFrequentClickAlert");
-                const alertBox = document.createElement('div');
-                alertBox.style.position = 'fixed';
-                alertBox.style.top = '20px';
-                alertBox.style.left = '50%';
-                alertBox.style.transform = 'translateX(-50%)';
-                alertBox.style.padding = '10px';
-                alertBox.style.backgroundColor = '#f44336';
-                alertBox.style.color = '#fff';
-                alertBox.style.fontSize = '16px';
-                alertBox.style.borderRadius = '5px';
-                alertBox.style.zIndex = '1000';
-                alertBox.innerText = '点击过于频繁';
-                document.body.appendChild(alertBox);
+                // todo: 设置提示框，提示点击过于频繁
                 setTimeout(() => {
-                    alertBox.remove();
+                    // todo: 去除提示框
                 }, 1000);
             }
 
@@ -288,35 +292,40 @@
                 let data;
                 let status = 'RUNNING';
 
-                while (status === 'RUNNING') {
+                while (status !== 'FINISHED') {
                     response = await fetch(baseUrl + `/${noteId}/paragraph/${paragraphId}`);
                     data = await response.json();
                     status = data.body.status;
-                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    console.log(status);
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
-                return data.body.results.msg[0].data;
+                return data;
             }
 
             async function handleNodeClick(nodeId) {
                 const noteId = 'NOTE_ID';
                 const paragraphId = 'PARAGRAPH_ID';
                 const query = 'handle_html_node_click ' + paragraphId + ' ' + nodeId;
+                let data;
                 // 1. 获取最后一个段落的id
                 const lastParagraphId = await getParagraphId(noteId);
                 console.log("getParagraphId: " + lastParagraphId);
-                // 2. 更新段落内容
+                // 2. 保存并更新段落内容
+                data = await getParagraphResult(noteId, lastParagraphId);
+                const lastParagraphText = data.body.text;
                 await updateParagraph(noteId, lastParagraphId, query);
                 console.log("updateParagraph");
                 // 3. 执行段落
                 await executeParagraph(noteId, lastParagraphId);
                 console.log("executeParagraph");
                 // 4. 获取段落执行结果
-                const resultString  = await getParagraphResult(noteId, lastParagraphId);
+                data  = await getParagraphResult(noteId, lastParagraphId);
+                const resultString = data.body.results.msg[0].data;
                 console.log("getParagraphResult");
                 // 5. 恢复段落
                 await updateParagraph(noteId, lastParagraphId, "clearParagraph");
                 await executeParagraph(noteId, lastParagraphId);
-                await updateParagraph(noteId, lastParagraphId, "");
+                await updateParagraph(noteId, lastParagraphId, lastParagraphText);
                 console.log("clearParagraph");
                 // 6. 处理返回的result
                 console.log(nodeId + '的点击结果:', resultString );

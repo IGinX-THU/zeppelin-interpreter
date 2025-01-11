@@ -23,10 +23,30 @@
 
     <repositories>
         <repository>
+            <id>tsinghua</id>
+            <name>Tsinghua University Maven Repository</name>
+            <url>https://mirrors.tuna.tsinghua.edu.cn/maven/</url>
+        </repository>
+        <repository>
             <id>iginx</id>
             <name>IGinX GitHub repository</name>
             <url>https://iginx-thu.github.io/IGinX/maven-repo</url>
         </repository>
+<!--        <repository>-->
+<!--            <id>central</id>-->
+<!--            <name>aliyun Repository</name>-->
+<!--            <url>https://maven.aliyun.com/repository/public</url>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>central</id>-->
+<!--            <name>huaweicloud Repository</name>-->
+<!--            <url>https://repo.huaweicloud.com/repository/maven/</url>-->
+<!--        </repository>-->
+<!--        <repository>-->
+<!--            <id>central</id>-->
+<!--            <name>Maven Central Repository</name>-->
+<!--            <url>https://repo1.maven.org/maven2</url>-->
+<!--        </repository>-->
     </repositories>
 
     <build>
