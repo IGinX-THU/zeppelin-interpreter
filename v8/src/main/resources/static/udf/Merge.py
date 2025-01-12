@@ -1,4 +1,5 @@
 import traceback
+
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics import silhouette_score
@@ -181,6 +182,10 @@ class UDFMerge:
         print("enter transform Merge success")
         print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         # print(kvargs)
+        if kvargs.get("host"):
+            self.milvus_host = kvargs["host"].decode("utf-8")
+        if kvargs.get("port"):
+            self.milvus_port = int(kvargs["port"].decode("utf-8"))
         path_list = json.loads(kvargs["str"].decode("utf-8"))
         milvus_client = MilvusClient(self.milvus_host, self.milvus_port)
 

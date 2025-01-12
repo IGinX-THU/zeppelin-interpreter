@@ -64,6 +64,8 @@ public class IginxInterpreter8 extends Interpreter {
   private static final String IGINX_NOTE_FONT_SIZE_ENABLE = "iginx.zeppelin.note.font.size.enable";
   private static final String IGINX_NOTE_FONT_SIZE = "iginx.zeppelin.note.font.size";
   private static final String IGINX_GRAPH_TREE_ENABLE = "iginx.graph.tree.enable";
+  private static final String IGINX_MILVUS_HOST = "ginx.milvus.host";
+  private static final String IGINX_MILVUS_PORT = "ginx.milvus.port";
 
   private static final String DEFAULT_HOST = "127.0.0.1";
   private static final String DEFAULT_PORT = "6888";
@@ -82,6 +84,8 @@ public class IginxInterpreter8 extends Interpreter {
   private static final String DEFAULT_NOTE_FONT_SIZE_ENABLE = "false";
   private static final String DEFAULT_NOTE_FONT_SIZE = "9.0";
   private static final String DEFAULT_IGINX_GRAPH_TREE_ENABLE = "true";
+  private static final String DEFAULT_MILVUS_HOST = "127.0.0.1";
+  private static final String DEFAULT_MILVUS_PORT = "19530";
 
   private static final String TAB = "\t";
   private static final String NEWLINE = "\n";
@@ -108,6 +112,8 @@ public class IginxInterpreter8 extends Interpreter {
   private boolean noteFontSizeEnable = false;
   private double noteFontSize = 9.0;
   private boolean graphTreeEnable = true;
+  private String milvusHost = "";
+  private int milvusPort = 0;
 
   private Queue<String> downloadFileQueue = new LinkedList<>();
   private Queue<Double> downloadFileSizeQueue = new LinkedList<>();
@@ -193,6 +199,8 @@ public class IginxInterpreter8 extends Interpreter {
     graphTreeEnable =
         Boolean.parseBoolean(
             properties.getProperty(IGINX_GRAPH_TREE_ENABLE, DEFAULT_IGINX_GRAPH_TREE_ENABLE));
+    milvusHost = getProperty(IGINX_MILVUS_HOST, DEFAULT_MILVUS_HOST).trim();
+    milvusPort = Integer.parseInt(getProperty(IGINX_MILVUS_PORT, DEFAULT_MILVUS_PORT).trim());
     localIpAddress = getLocalHostExactAddress();
     if (localIpAddress == null) {
       localIpAddress = "127.0.0.1";
@@ -424,7 +432,9 @@ public class IginxInterpreter8 extends Interpreter {
             Boolean.parseBoolean(getCmdConfig("", context, GRAPH_RELATION)),
             context.getParagraphId(),
             queryList,
-            session);
+            session,
+            milvusHost,
+            milvusPort);
     networkMap.put(context.getParagraphId(), networkService);
 
     String serverAddr = "localhost";

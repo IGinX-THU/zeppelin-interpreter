@@ -25,7 +25,8 @@ public class NetworkService {
   private static final Double RELATION_THRESHOLD = 0.85; // 关系阈值
   private static final Integer RELATION_DEPTH_LEVEL = 3; // 关系深度层级
   private static final Integer MERGE_MIN_SIZE = 5; // 需要聚类的最小值
-  private static final String MERGE_SQL_STR = "select merge(*, str='@@@') from (show columns ###);";
+  private static final String MERGE_SQL_STR =
+      "select merge(*, str='@@@', host='&&&', port='%%%') from (show columns ###);";
   private Boolean needMerge; // 是否需要合并
   private Boolean needRelation; // 是否需要计算关系
   private Session session;
@@ -33,6 +34,8 @@ public class NetworkService {
   private List<List<String>> columnPath;
   private NetworkTreeNode root;
   private MilvusDao milvusDao;
+  private String milvusHost;
+  private Integer milvusPort;
   private Map<String, Map<String, Relation>> relationMap = new ConcurrentHashMap<>();
 
   public NetworkService(
@@ -40,14 +43,18 @@ public class NetworkService {
       Boolean needRelation,
       String paragraphId,
       List<List<String>> columnPath,
-      Session session) {
+      Session session,
+      String milvusHost,
+      Integer milvusPort) {
     this.needMerge = needMerge;
     this.needRelation = needRelation;
     this.paragraphId = paragraphId;
     this.columnPath = columnPath;
     this.session = session;
+    this.milvusHost = milvusHost;
+    this.milvusPort = milvusPort;
     if (needRelation) {
-      this.milvusDao = MilvusDao.getInstance();
+      this.milvusDao = MilvusDao.getInstance(this.milvusHost, this.milvusPort);
     }
   }
 
@@ -173,7 +180,11 @@ public class NetworkService {
       LOGGER.error("JSON fail", e);
     }
 
-    String sql = MERGE_SQL_STR.replace("@@@", str);
+    String sql =
+        MERGE_SQL_STR
+            .replace("@@@", str)
+            .replace("&&&", milvusHost)
+            .replace("%%%", milvusPort.toString());
     List<List<String>> queryList = getQueryList(sql);
     if (queryList == null) {
       return;

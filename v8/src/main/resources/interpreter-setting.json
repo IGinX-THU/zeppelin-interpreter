@@ -115,6 +115,20 @@
         "defaultValue": true,
         "description": "If true, the result of show columns will be displayed as a tree; otherwise, it will be displayed as forest, Default = true",
         "type": "checkbox"
+      },
+      "iginx.milvus.host": {
+        "envName": null,
+        "propertyName": "iginx.milvus.host",
+        "defaultValue": "127.0.0.1",
+        "description": "Milvus database host to connect to, Default = 127.0.0.1",
+        "type": "string"
+      },
+      "iginx.milvus.port": {
+        "envName": null,
+        "propertyName": "iginx.milvus.port",
+        "defaultValue": "19530",
+        "description": "Milvus database port to connect to, Default = 19530",
+        "type": "number"
       }
     },
     "editor": {

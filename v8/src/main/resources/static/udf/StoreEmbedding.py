@@ -158,6 +158,10 @@ class UDFStoreEmbedding:
     def transform(self, data, args, kvargs):
         print("enter transform StoreEmbedding success")
         print(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        if kvargs.get("host"):
+            self.milvus_host = kvargs["host"].decode("utf-8")
+        if kvargs.get("port"):
+            self.milvus_port = int(kvargs["port"].decode("utf-8"))
 
         milvus_client = MilvusClient(self.milvus_host, self.milvus_port)
 
@@ -209,4 +213,3 @@ class UDFStoreEmbedding:
 # for row in result:
 #     decoded_row = [col.decode('utf-8') if isinstance(col, bytes) else col for col in row]
 #     print(decoded_row)
-

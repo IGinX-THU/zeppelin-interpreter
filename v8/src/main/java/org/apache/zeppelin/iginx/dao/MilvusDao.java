@@ -14,13 +14,16 @@ import org.slf4j.LoggerFactory;
 public class MilvusDao {
   private static final Logger LOGGER = LoggerFactory.getLogger(MilvusDao.class);
   // todo:将ip和port修改到从配置文件中获取
-  private static final String IP_ADDR = "localhost"; // 默认 IP 地址
-  private static final Integer PORT = 19530; // 默认端口
+  private String milvusHost = "localhost"; // 默认 IP 地址
+  private Integer milvusPort = 19530; // 默认端口
   private static final Integer DIMENSION = 768; // 维度
   private static volatile MilvusDao instance; // 单例实例
   private MilvusServiceClient milvusServiceClient;
 
-  private MilvusDao() {
+  private MilvusDao(String milvusHost, Integer milvusPort) {
+    this.milvusHost = milvusHost;
+    this.milvusPort = milvusPort;
+    LOGGER.info("milvusHost is: {}, milvusPort is: {}", milvusHost, milvusPort);
     this.milvusServiceClient = createClient();
   }
 
@@ -29,11 +32,11 @@ public class MilvusDao {
    *
    * @return 单例实例
    */
-  public static MilvusDao getInstance() {
+  public static MilvusDao getInstance(String milvusHost, Integer milvusPort) {
     if (instance == null) {
       synchronized (MilvusDao.class) {
         if (instance == null) {
-          instance = new MilvusDao();
+          instance = new MilvusDao(milvusHost, milvusPort);
         }
       }
     }
@@ -46,7 +49,8 @@ public class MilvusDao {
    * @return 返回创建的 Milvus 客户端
    */
   private MilvusServiceClient createClient() {
-    ConnectParam connectParam = ConnectParam.newBuilder().withHost(IP_ADDR).withPort(PORT).build();
+    ConnectParam connectParam =
+        ConnectParam.newBuilder().withHost(milvusHost).withPort(milvusPort).build();
 
     milvusServiceClient = new MilvusServiceClient(connectParam);
     LOGGER.info("已连接Milvus数据库");
