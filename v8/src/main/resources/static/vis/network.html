@@ -281,6 +281,14 @@
             }
 
             async function executeParagraph(noteId, paragraphId) {
+                const status = await getParagraphStatus(noteId, paragraphId);
+                if (status === 'ERROR') {
+                    await fetch(baseUrl + `/job/${noteId}/${paragraphId}`, {
+                        method: 'POST',
+                    });
+                } else if (status === 'PENDING' && status === 'RUNNING') {
+                    return;
+                }
                 const response = await fetch(baseUrl + `/job/${noteId}/${paragraphId}`, {
                     method: 'POST',
                 });
@@ -290,16 +298,24 @@
             async function getParagraphResult(noteId, paragraphId) {
                 let response;
                 let data;
-                let status = 'RUNNING';
-
-                while (status !== 'FINISHED') {
+                let status;
+                while (true) {
                     response = await fetch(baseUrl + `/${noteId}/paragraph/${paragraphId}`);
                     data = await response.json();
                     status = data.body.status;
+                    if (status === 'READY' || status === 'FINISHED') {
+                        break;
+                    }
                     console.log(status);
                     await new Promise(resolve => setTimeout(resolve, 500));
                 }
                 return data;
+            }
+
+            async function getParagraphStatus(noteId, paragraphId) {
+                const response = await fetch(baseUrl + `/job/${noteId}/${paragraphId}`);
+                const data = await response.json();
+                return data.body.status;
             }
 
             async function handleNodeClick(nodeId) {
@@ -325,10 +341,14 @@
                 // 5. 恢复段落
                 await updateParagraph(noteId, lastParagraphId, "clearParagraph");
                 await executeParagraph(noteId, lastParagraphId);
-                await updateParagraph(noteId, lastParagraphId, lastParagraphText);
+                if (!lastParagraphId.startsWith('handle_html_node_click')) {
+                    await updateParagraph(noteId, lastParagraphId, lastParagraphText);
+                } else {
+                    await updateParagraph(noteId, lastParagraphId, "");
+                }
                 console.log("clearParagraph");
                 // 6. 处理返回的result
-                console.log(nodeId + '的点击结果:', resultString );
+                console.log('【' + nodeId + '】的点击结果:', resultString );
                 let result = {};
                 try {
                     result = JSON.parse(resultString);

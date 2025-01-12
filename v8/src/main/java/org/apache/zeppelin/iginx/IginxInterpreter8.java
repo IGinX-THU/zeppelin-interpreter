@@ -129,7 +129,7 @@ public class IginxInterpreter8 extends Interpreter {
           SqlType.GetReplicaNum,
           SqlType.ShowRegisterTask);
 
-  private static Map<String, NetworkService> networkMap = new HashMap<>();
+  private static final Map<String, NetworkService> networkMap = new HashMap<>();
   private Boolean needAddHideResult = true;
 
   // 定义html模板中的占位符

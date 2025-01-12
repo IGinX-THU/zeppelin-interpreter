@@ -1,17 +1,10 @@
 package org.apache.zeppelin.iginx.util;
 
-import com.alibaba.fastjson2.annotation.JSONField;
 
 public class Relation {
-  @JSONField(serialize = true)
   private String from;
-
-  @JSONField(serialize = true)
   private String to;
-
   private Double score;
-
-  @JSONField(serialize = true)
   private String relation;
 
   public Relation(String from, String to, Double score) {
@@ -51,5 +44,22 @@ public class Relation {
 
   public void setRelation(String relation) {
     this.relation = relation;
+  }
+
+  @Override
+  public String toString() {
+    return "Relation{"
+        + "from='"
+        + from
+        + '\''
+        + ", to='"
+        + to
+        + '\''
+        + ", score="
+        + score
+        + ", relation='"
+        + relation
+        + '\''
+        + '}';
   }
 }

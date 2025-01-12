@@ -1,27 +1,15 @@
 package org.apache.zeppelin.iginx.util;
 
-import com.alibaba.fastjson2.annotation.JSONField;
 import java.util.*;
 
 public class NetworkTreeNode {
   private String id;
   private String name;
-
-  @JSONField(serialize = false)
   private Map<String, NetworkTreeNode> children = new HashMap<>();
-
   private int depth;
-
-  @JSONField(serialize = false)
   private String mergedRoot;
-
-  @JSONField(serialize = false)
   private List<Float> embedding;
-
-  @JSONField(serialize = false)
   private Boolean isExpanded;
-
-  @JSONField(serialize = false)
   private Boolean isShown;
 
   public NetworkTreeNode(String id, String name, int depth) {
