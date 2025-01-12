@@ -1,6 +1,5 @@
 package org.apache.zeppelin.iginx.util;
 
-
 public class Relation {
   private String from;
   private String to;

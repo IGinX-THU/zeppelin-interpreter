@@ -28,6 +28,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
 import org.apache.zeppelin.iginx.service.NetworkService;
@@ -37,6 +39,10 @@ import org.apache.zeppelin.iginx.util.SqlCmdUtil;
 import org.apache.zeppelin.interpreter.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 public class IginxInterpreter8 extends Interpreter {
   private static final Logger LOGGER = LoggerFactory.getLogger(IginxInterpreter8.class);
@@ -420,23 +426,49 @@ public class IginxInterpreter8 extends Interpreter {
             queryList,
             session);
     networkMap.put(context.getParagraphId(), networkService);
-    // todo:"ZEPPELIN_SERVER" 和 "ZEPPELIN_PORT" 的替换需要改为实际的
+
+    String serverAddr = "localhost";
+    String serverPort = "8080";
+    try {
+      LOGGER.info("Current working directory: " + System.getProperty("user.dir"));
+      String currentDir = System.getProperty("user.dir");
+      File configFile = new File(currentDir, "../conf/zeppelin-site.xml");
+      DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+      DocumentBuilder builder = factory.newDocumentBuilder();
+      Document document = builder.parse(configFile);
+      NodeList propertyList = document.getElementsByTagName("property");
+      for (int i = 0; i < propertyList.getLength(); i++) {
+        Node propertyNode = propertyList.item(i);
+        if (propertyNode.getNodeType() == Node.ELEMENT_NODE) {
+          Element propertyElement = (Element) propertyNode;
+          String name = propertyElement.getElementsByTagName("name").item(0).getTextContent();
+          if ("zeppelin.server.addr".equals(name)) {
+            serverAddr = propertyElement.getElementsByTagName("value").item(0).getTextContent();
+          } else if ("zeppelin.server.port".equals(name)) {
+            serverPort = propertyElement.getElementsByTagName("value").item(0).getTextContent();
+          }
+        }
+      }
+    } catch (Exception e) {
+      LOGGER.error("Failed to read or parse the Zeppelin configuration file.", e);
+    }
+
     String html =
         networkService
             .initNetwork()
             .replace("PARAGRAPH_ID", context.getParagraphId())
             .replace("NOTE_ID", context.getNoteId())
-            .replace("ZEPPELIN_SERVER", "localhost")
-            .replace("ZEPPELIN_PORT", "8100");
+            .replace("ZEPPELIN_SERVER", serverAddr)
+            .replace("ZEPPELIN_PORT", serverPort);
 
-    String filePath = "D:\\test.html";
-    File file = new File(filePath);
-    try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-      writer.write(html);
-      LOGGER.info("HTML content has been written to {}", filePath);
-    } catch (IOException e) {
-      LOGGER.info("Error writing to file: {}", e.getMessage());
-    }
+    //    String filePath = "D:\\test.html";
+    //    File file = new File(filePath);
+    //    try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+    //      writer.write(html);
+    //      LOGGER.info("HTML content has been written to {}", filePath);
+    //    } catch (IOException e) {
+    //      LOGGER.info("Error writing to file: {}", e.getMessage());
+    //    }
 
     return html;
   }

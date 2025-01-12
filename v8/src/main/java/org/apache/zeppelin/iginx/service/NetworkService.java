@@ -120,34 +120,41 @@ public class NetworkService {
     return result.toString();
   }
 
-  // todo:后续改为多线程并行
   // todo:数据量很大时，考虑先只build前几层？
   private void buildForest(NetworkTreeNode root, List<List<String>> columnPath) {
     long startTime = System.currentTimeMillis();
-    for (int i = 1; i < columnPath.size(); i++) {
-      List<String> path = columnPath.get(i);
-      String pathString = path.get(0);
-      String[] pathParts = pathString.split("\\.");
-      NetworkTreeNode currentNode = root;
-      for (String nodeName : pathParts) {
-        NetworkTreeNode childNode = currentNode.getChildren().get(nodeName);
-        if (childNode == null) {
-          childNode =
-              new NetworkTreeNode(
-                  currentNode.getId() + "." + nodeName, // 生成节点ID
-                  nodeName, // 节点名称
-                  currentNode.getDepth() + 1 // 父节点深度 + 1
-                  );
-          currentNode.getChildren().put(nodeName, childNode);
-        }
-        currentNode = childNode;
-      }
-    }
+    // 使用并行流处理 columnPath
+    columnPath
+        .parallelStream()
+        .skip(1)
+        .forEach(
+            path -> {
+              String pathString = path.get(0);
+              String[] pathParts = pathString.split("\\.");
+              NetworkTreeNode currentNode = root;
+
+              for (String nodeName : pathParts) {
+                // 使用同步块来保证线程安全
+                synchronized (currentNode) {
+                  NetworkTreeNode childNode = currentNode.getChildren().get(nodeName);
+                  if (childNode == null) {
+                    childNode =
+                        new NetworkTreeNode(
+                            currentNode.getId() + "." + nodeName, // 生成节点ID
+                            nodeName, // 节点名称
+                            currentNode.getDepth() + 1 // 父节点深度 + 1
+                            );
+                    currentNode.getChildren().put(nodeName, childNode);
+                  }
+                  currentNode = childNode;
+                }
+              }
+            });
+
     long endTime = System.currentTimeMillis();
     LOGGER.info("buildForest run time：" + (endTime - startTime) + "ms");
   }
 
-  // todo:并行优化
   // todo:数据量很大时，updateNodes会几乎遍历所有结点，比较耗时，后续考虑借鉴懒标记思想优化？
   private void mergeForest(NetworkTreeNode root) {
     long startTime = System.currentTimeMillis();
@@ -172,35 +179,43 @@ public class NetworkService {
       return;
     }
 
-    // 根据label区分
-    Map<String, List<NetworkTreeNode>> labelToNodesMap = new HashMap<>();
-    for (int i = 1; i < queryList.size(); i++) {
-      List<String> row = queryList.get(i);
-      String label = row.get(0);
-      LOGGER.info("label: {}", label);
-      String nodeName = row.get(1);
-      LOGGER.info("nodeName: {}", nodeName);
-      NetworkTreeNode node = root.getChildren().get(nodeName);
-      if (node != null) {
-        labelToNodesMap.computeIfAbsent(label, k -> new ArrayList<>()).add(node);
-      }
-    }
+    // 根据label区分，使用并行流处理查询结果，构建 labelToNodesMap
+    Map<String, List<NetworkTreeNode>> labelToNodesMap =
+        queryList
+            .parallelStream()
+            .skip(1) // 跳过表头
+            .collect(
+                Collectors.groupingBy(
+                    row -> row.get(0),
+                    Collectors.mapping(
+                        row -> root.getChildren().get(row.get(1)), Collectors.toList())));
     LOGGER.info("the size of labelToNodesMap is {}", labelToNodesMap.size());
 
     // 对每个label进行合并
-    for (Map.Entry<String, List<NetworkTreeNode>> entry : labelToNodesMap.entrySet()) {
-      List<NetworkTreeNode> nodesToMerge = entry.getValue();
-      if (nodesToMerge.size() > 1) {
-        String mergedName = LLMUtils.getConcept(nodesToMerge);
-        NetworkTreeNode mergedNode = new NetworkTreeNode("rootId." + mergedName, mergedName, 1);
-        for (NetworkTreeNode node : nodesToMerge) {
-          mergedNode.getChildren().put(node.getName(), node);
-          updateNodes(node, mergedNode.getName());
-          root.getChildren().remove(node.getName());
-        }
-        root.getChildren().put(mergedNode.getName(), mergedNode);
-      }
-    }
+    labelToNodesMap
+        .entrySet()
+        .parallelStream()
+        .forEach(
+            entry -> {
+              List<NetworkTreeNode> nodesToMerge = entry.getValue();
+              if (nodesToMerge.size() > 1) {
+                String mergedName = LLMUtils.getConcept(nodesToMerge);
+                NetworkTreeNode mergedNode =
+                    new NetworkTreeNode("rootId." + mergedName, mergedName, 1);
+                nodesToMerge.forEach(
+                    node -> {
+                      mergedNode.getChildren().put(node.getName(), node);
+                      updateNodes(node, mergedNode.getName());
+                      synchronized (root) {
+                        root.getChildren().remove(node.getName());
+                      }
+                    });
+                synchronized (root) {
+                  root.getChildren().put(mergedNode.getName(), mergedNode);
+                }
+              }
+            });
+
     long endTime = System.currentTimeMillis();
     LOGGER.info("mergeForest run time：" + (endTime - startTime) + "ms");
   }
