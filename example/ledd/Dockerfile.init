@@ -1,0 +1,15 @@
+FROM openjdk:8-jre-slim
+
+WORKDIR /app
+
+ADD https://github.com/IGinX-THU/IGinX/releases/download/v0.8.0/IGinX-Client-0.8.0.tar.gz ./
+RUN tar -xzvf IGinX-Client-0.8.0.tar.gz && rm *.tar.gz
+
+COPY ./schemapile-loader/target/schemapile-loader-0.7.2-shaded.jar ./schemapile-loader.jar
+COPY ./resources/ScheduledEmbedding.yml ./
+COPY --chmod=777 ./resources/init.sh ./
+
+ENV IGINX_HOST=127.0.0.1
+ENV IGINX_PORT=6888
+
+CMD ["./init.sh"]

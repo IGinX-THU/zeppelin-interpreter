@@ -12,7 +12,6 @@ import cn.edu.tsinghua.iginx.thrift.LoadUDFResp;
 import cn.edu.tsinghua.iginx.thrift.SqlType;
 import cn.edu.tsinghua.iginx.utils.FormatUtils;
 import cn.edu.tsinghua.iginx.utils.Pair;
-import com.alibaba.fastjson2.JSON;
 import java.io.*;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -30,6 +29,10 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.SystemUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.zeppelin.iginx.interpreter.AbstractExtensionInterpreter;
+import org.apache.zeppelin.iginx.interpreter.dataproperty.DataPropertyInterpreter;
+import org.apache.zeppelin.iginx.interpreter.udfgenerator.UdfGeneratorInterpreter;
 import org.apache.zeppelin.iginx.util.*;
 import org.apache.zeppelin.iginx.util.HttpUtil;
 import org.apache.zeppelin.iginx.util.SqlCmdUtil;
@@ -57,6 +60,8 @@ public class IginxInterpreter8 extends Interpreter {
   private static final String IGINX_NOTE_FONT_SIZE_ENABLE = "iginx.zeppelin.note.font.size.enable";
   private static final String IGINX_NOTE_FONT_SIZE = "iginx.zeppelin.note.font.size";
   private static final String IGINX_GRAPH_TREE_ENABLE = "iginx.graph.tree.enable";
+  private static final String IGINX_MILVUS_HOST = "iginx.milvus.host";
+  private static final String IGINX_MILVUS_PORT = "iginx.milvus.port";
 
   private static final String DEFAULT_HOST = "127.0.0.1";
   private static final String DEFAULT_PORT = "6888";
@@ -75,6 +80,8 @@ public class IginxInterpreter8 extends Interpreter {
   private static final String DEFAULT_NOTE_FONT_SIZE_ENABLE = "false";
   private static final String DEFAULT_NOTE_FONT_SIZE = "9.0";
   private static final String DEFAULT_IGINX_GRAPH_TREE_ENABLE = "true";
+  private static final String DEFAULT_MILVUS_HOST = "127.0.0.1";
+  private static final String DEFAULT_MILVUS_PORT = "19530";
 
   private static final String TAB = "\t";
   private static final String NEWLINE = "\n";
@@ -100,7 +107,6 @@ public class IginxInterpreter8 extends Interpreter {
   private long uploadDirMaxSize = 0;
   private boolean noteFontSizeEnable = false;
   private double noteFontSize = 9.0;
-  private boolean graphTreeEnable = true;
 
   private Queue<String> downloadFileQueue = new LinkedList<>();
   private Queue<Double> downloadFileSizeQueue = new LinkedList<>();
@@ -118,6 +124,8 @@ public class IginxInterpreter8 extends Interpreter {
   private Exception exception;
 
   private SimpleFileServer fileServer;
+  private AbstractExtensionInterpreter dataPropertyInterpreter;
+  private AbstractExtensionInterpreter udfGeneratorInterpreter;
 
   // 返回结果为单个表格的语句
   private static final List<SqlType> singleFormSqlType =
@@ -137,7 +145,6 @@ public class IginxInterpreter8 extends Interpreter {
   private static final String STYLES = "STYLES";
   // 定义特殊操作符，按照show columns图形化命令结果
   private static final String CMD_STARTER = ">"; // 命令级参数的首个字符 >graph.tree
-  private static final String GRAPHICAL_RESULTS = ">graph.tree";
   private static final String PRINT_KEY_TIME = ">print.key.time";
 
   public IginxInterpreter8(Properties properties) {
@@ -177,9 +184,6 @@ public class IginxInterpreter8 extends Interpreter {
     noteFontSize =
         Double.parseDouble(
             properties.getProperty(IGINX_NOTE_FONT_SIZE, DEFAULT_NOTE_FONT_SIZE).trim());
-    graphTreeEnable =
-        Boolean.parseBoolean(
-            properties.getProperty(IGINX_GRAPH_TREE_ENABLE, DEFAULT_IGINX_GRAPH_TREE_ENABLE));
     localIpAddress = getLocalHostExactAddress();
     if (localIpAddress == null) {
       localIpAddress = "127.0.0.1";
@@ -192,6 +196,18 @@ public class IginxInterpreter8 extends Interpreter {
       exception = e;
       System.out.println("Can not open session successfully.");
     }
+
+    dataPropertyInterpreter =
+        new DataPropertyInterpreter(
+            session,
+            getProperty(IGINX_MILVUS_HOST, DEFAULT_MILVUS_HOST).trim(),
+            Integer.parseInt(getProperty(IGINX_MILVUS_PORT, DEFAULT_MILVUS_PORT).trim()));
+
+    udfGeneratorInterpreter =
+        new UdfGeneratorInterpreter(
+            session,
+            getProperty(IGINX_MILVUS_HOST, DEFAULT_MILVUS_HOST).trim(),
+            Integer.parseInt(getProperty(IGINX_MILVUS_PORT, DEFAULT_MILVUS_PORT).trim()));
 
     try {
       fileServer =
@@ -224,7 +240,7 @@ public class IginxInterpreter8 extends Interpreter {
     if (exception != null) {
       return new InterpreterResult(InterpreterResult.Code.ERROR, exception.getMessage());
     }
-
+    logger.info("getCMD: {}, config is {}", st, context.getConfig());
     String[] cmdList = parseMultiLinesSQL(st);
 
     if (hasMultiLoadData(cmdList)) {
@@ -276,7 +292,6 @@ public class IginxInterpreter8 extends Interpreter {
           addHideResult(interpreterResult, context);
           future.complete(interpreterResult);
         });
-
     return future;
   }
 
@@ -300,6 +315,12 @@ public class IginxInterpreter8 extends Interpreter {
       } else if (isCreateFunction(sql.toLowerCase())) {
         return processCreateFunction(sql);
       }
+      if (dataPropertyInterpreter.canInterpret(sql)) {
+        return dataPropertyInterpreter.interpret(sql, context);
+      }
+      if (udfGeneratorInterpreter.canInterpret(sql)) {
+        return udfGeneratorInterpreter.interpret(sql, context);
+      }
 
       SessionExecuteSqlResult sqlResult = session.executeSql(sql);
 
@@ -315,14 +336,7 @@ public class IginxInterpreter8 extends Interpreter {
         List<List<String>> queryList =
             sqlResult.getResultInList(
                 keyTimeEnable, FormatUtils.DEFAULT_TIME_FORMAT, timePrecision);
-        if (SqlType.ShowColumns == sqlResult.getSqlType()
-            || Boolean.parseBoolean(getCmdConfig(sql, context, GRAPHICAL_RESULTS))) {
-          interpreterResult.add(
-              new InterpreterResultMessage(
-                  InterpreterResult.Type.HTML,
-                  buildTreeForShowColumns(queryList, context.getParagraphId())));
-        }
-        msg = buildSingleFormResult(queryList);
+        msg = TableUtil.buildSingleFormResult(queryList);
         interpreterResult.add(InterpreterResult.Type.TABLE, msg);
       } else if (sqlResult.getSqlType() == SqlType.Query && sql.startsWith("explain")) {
         msg =
@@ -347,52 +361,9 @@ public class IginxInterpreter8 extends Interpreter {
     } catch (Exception e) {
       return new InterpreterResult(
           InterpreterResult.Code.ERROR,
-          "encounter error when executing sql statement:\n" + e.getMessage());
+          String.format(
+              "encounter error when executing sql statement: %s", ExceptionUtils.getStackTrace(e)));
     }
-  }
-
-  /**
-   * 为show columns 命令创建树状状图
-   *
-   * @param queryList
-   */
-  public String buildTreeForShowColumns(List<List<String>> queryList, String paragraphId) {
-    MultiwayTree tree = MultiwayTree.getMultiwayTree();
-    queryList
-        .subList(1, queryList.size())
-        .forEach(
-            row -> {
-              MultiwayTree.addTreeNodeFromString(tree, row.get(0));
-            });
-    String htmlTemplate = "static/highcharts/tree.html";
-    try (InputStream inputStream =
-        IginxInterpreter8.class.getClassLoader().getResourceAsStream(htmlTemplate)) {
-      BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
-      StringBuilder content = new StringBuilder();
-      String line;
-      while ((line = reader.readLine()) != null) {
-        content.append(line).append("\n");
-      }
-      List<HighchartsTreeNode> nodeList = new ArrayList<>();
-      int depth = tree.traverseToHighchartsTreeNodes(tree.getRoot(), nodeList);
-
-      String jsonString = JSON.toJSONString(nodeList);
-      String html =
-          content
-              .toString()
-              .replace("PARAGRAPH_ID", paragraphId)
-              .replace("NODE_LIST", jsonString)
-              .replace("TREE_DEPTH", String.valueOf(depth))
-              .replace("TREE_ENABLE", String.valueOf(graphTreeEnable));
-      String fileName = paragraphId + "_tree.html";
-      // 写入文件服务器paragraphID_tree.html
-      String targetPath = outfileDir + "/graphs/tree/" + fileName;
-      FileUtil.writeFile(html, targetPath);
-      return html;
-    } catch (IOException e) {
-      LOGGER.warn("load show columns to tree error", e);
-    }
-    return "";
   }
 
   private static boolean isLoadDataFromCsv(String sql) {
@@ -746,22 +717,6 @@ public class IginxInterpreter8 extends Interpreter {
     return cache;
   }
 
-  private String buildSingleFormResult(List<List<String>> queryList) {
-    StringBuilder builder = new StringBuilder();
-    for (int i = 0; i < queryList.size(); i++) {
-      List<String> row = queryList.get(i);
-      for (String val : row) {
-        if (i != 0) {
-          val = convertToHTMLString(val);
-        }
-        builder.append(val).append(TAB);
-      }
-      builder.deleteCharAt(builder.length() - 1);
-      builder.append(NEWLINE);
-    }
-    return builder.toString();
-  }
-
   /**
    * 将给定的文件列表压缩成zip文件，输出到给定的输出流中
    *
@@ -940,12 +895,6 @@ public class IginxInterpreter8 extends Interpreter {
     return Arrays.stream(tmp).map(String::trim).toArray(String[]::new);
   }
 
-  private String convertToHTMLString(String str) {
-    return str.contains("\n")
-        ? str.replace("\n", "<br>").replace("\t", "&nbsp;&nbsp;&nbsp;&nbsp;")
-        : str;
-  }
-
   /**
    * 取消任务，如果任务正在执行，将任务的CompletableFuture设置为异常状态，使得任务能够被取消
    *
@@ -1092,11 +1041,6 @@ public class IginxInterpreter8 extends Interpreter {
       if (!part.startsWith(CMD_STARTER)) {
         break;
       }
-      // 是否展示树状图
-      if (part.equalsIgnoreCase(GRAPHICAL_RESULTS)) {
-        context.getConfig().put(GRAPHICAL_RESULTS, "true");
-        sql = sql.substring(GRAPHICAL_RESULTS.length() + 1);
-      }
       // key按时间戳输出，默认按长整型输出
       if (part.equalsIgnoreCase(PRINT_KEY_TIME)) {
         context.getConfig().put(PRINT_KEY_TIME, "true");
@@ -1112,7 +1056,6 @@ public class IginxInterpreter8 extends Interpreter {
   }
 
   private void clearCmdConfig(InterpreterContext context) {
-    context.getConfig().remove(GRAPHICAL_RESULTS);
     context.getConfig().remove(PRINT_KEY_TIME);
   }
 }

@@ -1,0 +1,748 @@
+<style>
+    .data-property-container {
+        width: 100%;
+        border: 1px solid #ddd;
+        box-sizing: border-box;
+        border-radius: 5px;
+    }
+
+    .data-property-summary {
+        display: list-item;
+        cursor: pointer;
+    }
+
+    .data-property-tooltip {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        display: none;
+        pointer-events: none;
+        font-size: 12px;
+        max-width: 200px;
+    }
+
+    .plan_box {
+        overflow: hidden;
+        overflow-x: auto;
+    }
+    .plan_box table {
+        border-spacing: 0;
+        width: 100%;
+    }
+    .plan_box table thead tr:nth-child(2n+1) {
+        background-color: #FAFAFA;
+    }
+    .plan_box table tr {
+        height: 20px;
+        font-size: 10px;
+        color: #666666;
+        line-height: 10px;
+        font-weight: 600;
+    }
+    .plan_box table tr:nth-child(2n) {
+        background-color: #FAFAFA;
+    }
+    .plan_box table .head {
+        font-size: 12px;
+        color: #666666;
+        line-height: 12px;
+        font-weight: 600;
+    }
+
+    td, th {
+        word-break: break-word;
+        white-space: normal;
+    }
+</style>
+
+##<details open>
+##    <summary class="data-property-summary">Data Property</summary>
+    <div style="display: flex; gap: 5px; align-items: stretch;">
+        <!-- 左侧面板 -->
+        <div id="${paragraphId}_leftPanel" style="width: 400px; height: 570px; padding: 0 5px;">
+            <div style="border: 1px solid #ddd; padding: 10px; height: 100%; border-radius: 5px;">
+                <div style="color: black; font-size: 1.8rem; margin-bottom: 5px"><strong>LEDD</strong></div>
+                <div style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 5px; font-size: 1.2rem; display: inline-block;">
+                    <strong>Overview</strong>
+                </div>
+                <div style="display: flex; flex-wrap: wrap;">
+                    <div style="width: calc(40% - 5px); margin-top: 5px;">
+                        <span style="color: #d3d3d3;">&#9679;</span><strong>&nbsp;Original Nodes: </strong><span id="${paragraphId}_original_node_num"></span>
+                    </div>
+                    <div style="width: calc(60% - 5px); margin-top: 5px;">
+                        <span style="display: inline-block; width: 5px; height: 2px; background-color: #a9a9a9;"></span><strong>&nbsp;Original Parent-Child Relations: </strong><span id="${paragraphId}_original_parent-child_relation_num"></span>
+                    </div>
+                    <div style="width: calc(40% - 5px); margin-top: 5px;">
+                        <span style="color: #2ecc71;">&#9679;</span><strong>&nbsp;Generated Nodes: </strong><span id="${paragraphId}_generated_node_num"></span>
+                    </div>
+                    <div style="width: calc(60% - 5px); margin-top: 5px;">
+                        <span style="display: inline-block; width: 5px; height: 2px; background-color: #dc3545;"></span><strong>&nbsp;Discovered Similarity Relations: </strong><span id="${paragraphId}_discovered_similarity_relation_num"></span>
+                    </div>
+                </div>
+                <hr style="margin: 10px 5px;">
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                    <div style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 5px; font-size: 1.2rem; display: inline-block;">
+                        <strong>Relation</strong>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <input id="${paragraphId}_relation_input" type="text" value="analyse_relation" placeholder="input udf..." style="padding: 5px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; width: 120px;">
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; gap: 5px; margin-top: 10px;">
+                    <div style="width: 100%; max-height: 150px; overflow: auto; border: 1px solid #ddd;">
+                        <div class="plan_box">
+                            <table style="table-layout: fixed; width: 100%; border-spacing: 0 5px;">
+                                <thead>
+                                <tr>
+                                    <td class="head" style="width: 5%; text-align: left;">&nbsp;#</td>
+                                    <td class="head" style="width: 37%; text-align: left;">Relation</td>
+                                    <td class="head" style="width: 25%; text-align: left;">Source</td>
+                                    <td class="head" style="width: 25%; text-align: left;">Target</td>
+                                    <td class="head" style="width: 8%; text-align: left;">Sim.</td>
+                                </tr>
+                                </thead>
+                                <tbody id="${paragraphId}_relation_table_body">
+                                <tr>
+                                    <td>&nbsp;1</td>
+                                    <td>relation</td>
+                                    <td>*.path.*</td>
+                                    <td>*.path.*</td>
+                                    <td>0.88</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <hr style="margin: 10px 5px;">
+
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 5px;">
+                    <div style="background-color: #6c757d; color: white; padding: 5px 10px; border-radius: 5px; font-size: 1.2rem; display: inline-block;">
+                        <strong>Search</strong>
+                    </div>
+                    <div>
+                        <label for="${paragraphId}_search_top_k_box" style="width: 60px; text-align: right;"><Strong>Top K: </Strong></label>
+                        <input type="text" id="${paragraphId}_search_top_k_box" style="width: 35px;" value="10"/>
+                    </div>
+                    <div style="display: flex; align-items: center;">
+                        <input id="${paragraphId}_search_input" type="text" value="default_search" placeholder="input udf..." style="padding: 5px; border: 1px solid #ccc; border-radius: 4px; margin-right: 5px; width: 120px;">
+                    </div>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
+                    <div>
+                        <label for="${paragraphId}_search_box" style="width: 80px; text-align: center;"><Strong>Keywords: </Strong></label>
+                        <input type="text" id="${paragraphId}_search_box" style="width: 180px;" placeholder="Search..."/>
+                    </div>
+                    <button id="${paragraphId}_search_button" style="width: 80px; margin-right: 5px; vertical-align: middle;" type="button" class="btn btn-default btn-xs">Search</button>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 5px; margin-top: 10px;">
+                    <div style="width: 100%; max-height: 150px; overflow: auto; border: 1px solid #ddd;">
+                        <div class="plan_box">
+                            <table style="table-layout: fixed; width: 100%; border-spacing: 0 5px;">
+                                <thead>
+                                <tr>
+                                    <th class="head" style="width: 5%; text-align: left;">&nbsp;#</th>
+                                    <th class="head" style="width: 30%; text-align: left;">Name</th>
+                                    <th class="head" style="width: 57%; text-align: left;">Description</th>
+                                    <th class="head" style="width: 8%; text-align: left;">Sim.</th>
+                                </tr>
+                                </thead>
+                                <tbody id="${paragraphId}_search_table_body">
+                                <tr>
+                                    <td>&nbsp;1</td>
+                                    <td>*.path.*</td>
+                                    <td>some descriptions</td>
+                                    <td>0.88</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧面板 -->
+        <div id="${paragraphId}_rightPanel" style="flex-grow: 1; padding: 0 5px; height: 510px;">
+            <div style="padding: 10px; border: 1px solid #ddd; border-radius: 5px; display: flex; align-items: center; gap: 10px; height: 50px">
+                <strong>Legends:</strong>
+                <div style="display: grid; grid-template-columns: repeat(4, auto); gap: 5px 15px; font-weight: 500;">
+                    <div style="display: flex; align-items: center;"><span style="color: #77c7da;">&#9679;</span> : Virtual Root Node</div>
+                    <div style="display: flex; align-items: center;"><span style="color: #d3d3d3;">&#9679;</span> : Original Parent-Child Node</div>
+                    <div style="display: flex; align-items: center;"><span style="display: inline-block; width: 10px; height: 2px; background-color: #cccccc;"></span> : Original Parent-Child Relation</div>
+                    <div style="display: flex; align-items: center;"><span style="display: inline-block; width: 6px; height: 6px; border: 2px solid #ffe500; border-radius: 50%;"></span> : Parent of Searched Node</div>
+                    <div style="display: flex; align-items: center;"><span style="color: #ffc107;">&#9679;</span> : Searched Node</div>
+                    <div style="display: flex; align-items: center;"><span style="color: #2ecc71;">&#9679;</span> : Generated Node</div>
+                    <div style="display: flex; align-items: center;"><span style="display: inline-block; width: 10px; height: 2px; background-color: #b0c4de;"></span> : Generated Parent-Child Relation</div>
+                    <div style="display: flex; align-items: center;"><span style="display: inline-block; width: 10px; height: 2px; background-color: #dc3545;"></span> : Discovered Similarity Relation</div>
+                </div>
+            </div>
+            <div id="${paragraphId}_single_container" class="data-property-container panel panel-default" style="flex-grow: 1; margin-top: 10px; height: 100%;">
+                <div style="position: absolute; top: 10px; right: 10px; padding: 8px; border-radius: 5px;">
+                    <button id="${paragraphId}_fitView_button" type="button" class="btn btn-default btn-xs" style="margin-right: 8px; font-weight: 500;">fitView</button>
+                    <button id="${paragraphId}_zoomIn_button" type="button" class="btn btn-default btn-xs" style="margin-right: 8px; font-weight: 500;">zoomIn</button>
+                    <button id="${paragraphId}_zoomOut_button" type="button" class="btn btn-default btn-xs" style="margin-right: 8px; font-weight: 500;">zoomOut</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="tooltip" class="data-property-tooltip"></div>
+##</details>
+
+<script>
+    (async function () {
+        await import('https://gw.alipayobjects.com/os/antv/pkg/_antv.g6-3.1.1/build/g6.js');
+        await import('https://gw.alipayobjects.com/os/antv/assets/lib/jquery-3.2.1.min.js');
+        await import('https://gw.alipayobjects.com/os/antv/pkg/_antv.hierarchy-0.5.0/build/hierarchy.js');
+
+        class IginxExecutor {
+            _noteId;
+
+            constructor() {
+                this._noteId = window.location.hash.split('/')[2];
+            }
+
+            async execute(statement) {
+                const notebook = await this._getNotebook();
+                const lastParagraph = notebook.paragraphs.at(-1);
+
+                if (lastParagraph.text) {
+                    handleError('Please create a empty paragraph in last of notebook to execute interpreter');
+                }
+                const paragraphId = lastParagraph.id;
+
+                await this._updateParagraph(paragraphId, '%iginx ' + statement);
+                const executeResult = await this._executeParagraph(paragraphId);
+
+                await this._updateParagraph(paragraphId, '%iginx >data.property.clear');
+                await this._executeParagraph(paragraphId);
+
+                await this._updateParagraph(paragraphId, '');
+                return executeResult;
+            }
+
+            async _getNotebook() {
+                const apiUrl = 'api/notebook/' + this._noteId;
+                const response = await fetch(apiUrl);
+                this._checkResponse(response);
+                return (await response.json()).body;
+            }
+
+            async _updateParagraph(paragraphId, statement) {
+                const apiUrl = 'api/notebook/' + this._noteId + '/paragraph/' + paragraphId;
+                const response = await fetch(apiUrl, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        text: statement,
+                    })
+                });
+                this._checkResponse(response);
+            }
+
+            async _executeParagraph(paragraphId) {
+                const apiUrl = 'api/notebook/run/' + this._noteId + '/' + paragraphId;
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                });
+                const json = await response.json();
+                console.debug("json is: " + json);
+                return json.body;
+            }
+
+            async _getParagraphResult(paragraphId) {
+                const apiUrl = 'api/notebook/' + this._noteId + '/paragraph/' + paragraphId;
+                const response = await fetch(apiUrl);
+                return (await response.json()).body;
+            }
+
+            _checkResponse(response) {
+                if (!response.ok) {
+                    const msg = 'Status: ' + response.status + '. ' + response.statusText;
+                    handleError(msg);
+                }
+            }
+        }
+
+        const virtualRootNodeFillColor = '#77c7da';
+        const originalNodesFillColor = '#d3d3d3';
+        const generatedNodesFillColor = '#2ecc71';
+        const suspendedNodesFillColor = '#efefef';
+        const searchedNodesFillColor = '#ffc107';
+        const allNodesStrokeColor = '#a9a9a9';
+        const originalParentChildEdgesStrokeColor = '#cccccc';
+        const strongSimilarityEdgesStrokeColor = '#dc3545';
+        const searchedParentNodesStrokeColor = '#ffe500';
+        const generatedParentChildEdgesStrokeColor = "#b0c4de";
+
+        const container = document.getElementById('${paragraphId}_single_container');
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        const graph = new G6.TreeGraph({
+            container: container,
+            width: width,
+            height: height,
+            modes: {
+                default: ['drag-canvas', 'zoom-canvas', 'drag-node'],
+            },
+            defaultNode: {
+                type: 'rect',
+                size: [20, 10],
+                style: {
+                    fill: originalNodesFillColor,
+                    stroke: allNodesStrokeColor,
+                    lineWidth: 2,
+                },
+                labelCfg: {
+                    position: 'left',
+                    offset: 5,
+                    style: {
+                        fill: '#000000',
+                        fontWeight: 550,
+                        fontSize: 14,
+                        textAlign: 'right',
+                    },
+                },
+            },
+            defaultEdge: {
+                shape: 'cubic-horizontal',
+                style: {
+                    stroke: originalParentChildEdgesStrokeColor,
+                }
+            },
+            layout: {
+                type: 'compactBox',
+                direction: 'LR',
+                getId: function getId(d) {
+                    return d.id;
+                },
+                getHeight: () => 16,
+                getWidth: () => 16,
+                getVGap: () => 10,
+                getHGap: () => 100
+            }
+        });
+
+        // 初始化数据
+        const topNodesStr = '${nodeList}';
+        const topNodes = JSON.parse(topNodesStr);
+
+        const topRelationStr = '${relationList}';
+        const topRelations = JSON.parse(topRelationStr);
+
+        const nodeMap = {};
+        let searchedNodes = [];
+
+        // 转换数据为 G6 需要的格式
+        function convertToTreeData(nodes, relations) {
+            const rootNode = nodes[0];
+            const treeData = {
+                id: rootNode.id,
+                label: rootNode.name || "Data Asset",
+                depth: rootNode.depth,
+                style: { fill: virtualRootNodeFillColor, stroke: allNodesStrokeColor, lineWidth: 2},
+                children: [],
+            };
+
+            nodeMap[rootNode.id] = treeData;
+
+            // 添加子节点
+            for (let i = 1; i < nodes.length; i++) {
+                const node = nodes[i];
+                const parent = nodeMap[node.parentId] || treeData;
+                const child = {
+                    id: node.id,
+                    // label: node.name,
+                    label: handleNodeLabel(node.name),
+                    depth: node.depth,
+                    children: [],
+                    merge: node.merge,
+                    style: node.merge === true ? { fill: generatedNodesFillColor, stroke: allNodesStrokeColor, lineWidth: 2} : {fill: originalNodesFillColor, stroke: allNodesStrokeColor, lineWidth: 2},
+                    description: node.description,
+                };
+                parent.children.push(child);
+                nodeMap[node.id] = child;
+            }
+
+            // 添加额外关系
+            handleRelation(relations);
+
+            return treeData;
+        }
+
+        const treeData = convertToTreeData(topNodes, topRelations);
+        console.debug(treeData);
+
+        graph.data(treeData);
+        graph.render();
+        // graph.fitView();
+        await updateGeneratedParentChildEdgeColor();
+        await resetOverview();
+
+        // 绑定单击事件
+        graph.on('node:click', function (evt) {
+            const nodeModel = evt.item.getModel();
+            console.debug('nodeModel:', nodeModel.id);
+            handleNodeClickWithThrottle(nodeModel.id);
+        });
+
+        const tooltip = document.getElementById('tooltip');
+        const nodeStyle = {};
+
+        await addToolTipInteractionForGraph(graph);
+
+        function addToolTipInteractionForGraph(g) {
+            // 监听鼠标悬浮在结点上
+            g.on('node:mouseenter', (evt) => {
+                const node = evt.item;
+                const model = node.getModel();
+                nodeStyle.style = { ...model.style }
+                g.updateItem(node, {
+                    style: {
+                        stroke: suspendedNodesFillColor,
+                        lineWidth: 4,
+                    },
+                });
+                tooltip.innerText = "Node: " + model.id.replace("rootId.", "");
+                if (model.description) {
+                    tooltip.innerText = tooltip.innerText + "\nDescription: " + model.description;
+                }
+                tooltip.style.display = 'block';
+                tooltip.style.left = "" + (evt.clientX) + "px";
+                tooltip.style.top = "" + (evt.clientY) + "px";
+            });
+
+            // 监听鼠标移出结点
+            g.on('node:mouseleave', (evt) => {
+                const node = evt.item;
+                if (nodeStyle.style) {
+                    g.updateItem(node, { style: nodeStyle.style });
+                }
+                tooltip.style.display = 'none';
+            });
+
+            // 监听鼠标悬浮在边上
+            g.on('edge:mouseenter', (evt) => {
+                const { item } = evt;
+                const model = item.getModel();
+                if (model.label) {
+                    g.updateItem(item, {
+                        style: {
+                            stroke: 'red',
+                            lineWidth: 4,
+                        },
+                    });
+                    tooltip.innerText = model.label + "\nsimilarity is: " + model.score;
+                    tooltip.style.display = 'block';
+                    tooltip.style.left = "" + (evt.clientX) + "px";
+                    tooltip.style.top = "" + (evt.clientY) + "px";
+                }
+            });
+
+            // 监听鼠标离开边
+            g.on('edge:mouseleave', (evt) => {
+                const { item } = evt;
+                const model = item.getModel();
+                if (model.label) {
+                    g.updateItem(item, {
+                        style: {
+                            stroke: strongSimilarityEdgesStrokeColor,
+                            lineWidth: 2,
+                        },
+                    });
+                    tooltip.style.display = 'none';
+                }
+            });
+        }
+
+        let lastClickTime = 0;
+        const throttleDelay = 1000;  // 节流间隔
+
+        // 节流函数
+        async function handleNodeClickWithThrottle(nodeId) {
+            const now = Date.now();
+            if (now - lastClickTime > throttleDelay) {
+                lastClickTime = now;
+                await handleNodeClick(nodeId);
+                const runTime = Date.now() - now;
+                console.log("handleNodeClick run time for " + nodeId + " is: " + runTime + "ms");
+            } else {
+                showFrequentClickAlert();
+            }
+        }
+
+        // 弹出提示框函数
+        function showFrequentClickAlert() {
+            handleError("Your requests are too frequent");
+            setTimeout(() => {
+            }, 1000);
+        }
+
+        async function handleNodeClick(nodeId) {
+            const executor = new IginxExecutor(window.location.protocol, window.location.host);
+            console.debug('handleNodeClick:', nodeId);
+            const selectedUDF = document.getElementById("${paragraphId}_relation_input").value;
+            const statement = '>data.property.expand ${paragraphId} ' + nodeId + ' UDF' + selectedUDF;
+            const data = await executor.execute(statement);
+            console.debug('handleNodeClick executeInterpreter result:', data);
+            const resultJson = JSON.parse(data.msg[0].data);
+            console.debug('handleNodeClick resultJson:', resultJson);
+            await handleResult(resultJson, nodeId);
+            await updateGeneratedParentChildEdgeColor();
+            await resetOverview();
+            if (resultJson && resultJson.add && resultJson.add.nodes) {
+                await refreshSearch(resultJson.add.nodes.map(node => node.id));
+            }
+        }
+
+        function handleResult(result, nodeId) {
+            console.log("begin handleResult");
+            if (result && result.add) {
+                const parent = nodeMap[nodeId];
+                // 处理 add 中的 nodes
+                if (result.add.nodes) {
+                    result.add.nodes.forEach(node => {
+                        const child = {
+                            id: node.id,
+                            // label: node.name,
+                            label: handleNodeLabel(node.name),
+                            depth: node.depth,
+                            children: [],
+                            merge: node.merge,
+                            style: node.merge ? { fill: generatedNodesFillColor, stroke: allNodesStrokeColor, lineWidth: 2} : {fill: originalNodesFillColor, stroke: allNodesStrokeColor, lineWidth: 2},
+                            description: node.description,
+                        };
+                        parent.children.push(child);
+                        nodeMap[node.id] = child;
+                    });
+                }
+
+                graph.refreshLayout()
+
+                refreshPreviousPolylineRelation();
+                // 处理 add 中的 links
+                if (result.add.links) {
+                    handleRelation(result.add.links);
+                }
+                graph.fitView();
+            }
+        }
+
+        function refreshPreviousPolylineRelation() {
+            const edges = graph.getEdges();
+            edges.forEach((edge, index) => {
+                const model = edge.getModel();
+                if (model.label !== undefined) {
+                    if (nodeMap[model.source] && nodeMap[model.target] && nodeMap[model.source].depth === nodeMap[model.target].depth) {
+                        const sourceNode = graph.findById(model.source).getModel();
+                        const targetNode = graph.findById(model.target).getModel();
+                        const dy = targetNode.y - sourceNode.y;
+                        const distance = Math.abs(dy);
+                        const edgeConfig = {};
+                        if (distance < 100) {
+                            edgeConfig.shape = 'quadratic';
+                            edgeConfig.curveOffset = Math.max(50, Math.min(distance * 0.5, 300)) * (index % 2 === 0 ? 1 : -1);
+                        } else {
+                            edgeConfig.shape = 'polyline';
+                            edgeConfig.controlPoints = [
+                                { x: sourceNode.x + distance/5, y: sourceNode.y + dy/5 },
+                                { x: sourceNode.x + distance/4, y: targetNode.y - dy/2 },
+                                { x: sourceNode.x + distance/5, y: targetNode.y - dy/5 },
+                            ];
+                        }
+                        graph.updateItem(edge, edgeConfig);
+                    }
+                }
+            });
+        }
+
+        function handleRelation(links) {
+            const tbody = document.getElementById(`${paragraphId}_relation_table_body`);
+            if (!tbody) {
+                console.error(`Table body with id ${paragraphId}_relation_table_body not found!`);
+                return;
+            }
+            const existingRows = tbody.getElementsByTagName('tr');
+            let startIndex = existingRows.length;
+            if (startIndex === 1 && links.length > 0) {
+                const firstRowCells = existingRows[0].getElementsByTagName('td');
+                if (firstRowCells.length >= 3) {
+                    const sourceText = firstRowCells[2].textContent.trim();
+                    const targetText = firstRowCells[3].textContent.trim();
+                    if (sourceText === "*.path.*" && targetText === "*.path.*") {
+                        tbody.innerHTML = "";
+                        startIndex = 0;
+                    }
+                }
+            }
+
+            links.forEach((link, index) => {
+                const edgeConfig = {
+                    source: link.from,
+                    target: link.to,
+                    label: link.relation,
+                    score: link.score,
+                    style: {
+                        stroke: strongSimilarityEdgesStrokeColor,
+                        lineWidth: 2,
+                        radius: 10,
+                    },
+                    labelCfg: {
+                        style: {
+                            opacity: 0
+                        }
+                    }
+                };
+                if (nodeMap[link.from].depth === nodeMap[link.to].depth) {
+                    const sourceNode = graph.findById(link.from).getModel();
+                    const targetNode = graph.findById(link.to).getModel();
+                    const dy = targetNode.y - sourceNode.y;
+                    const distance = Math.abs(dy);
+                    if (distance < 100) {
+                        edgeConfig.shape = 'quadratic';
+                        edgeConfig.curveOffset = Math.max(50, Math.min(distance * 0.5, 300)) *  (index % 2 === 0 ? 1 : -1);
+                        // edgeConfig.curveOffset = 150;
+                    } else {
+                        edgeConfig.shape = 'polyline';
+                        edgeConfig.controlPoints = [
+                            { x: sourceNode.x + distance/5, y: sourceNode.y + dy/5 },
+                            { x: sourceNode.x + distance/4, y: targetNode.y - dy/2 },
+                            { x: sourceNode.x + distance/5, y: targetNode.y - dy/5 },
+                        ];
+                    }
+                }
+                graph.addItem('edge', edgeConfig);
+
+                let row = tbody.insertRow();
+                let cell1 = row.insertCell(0);
+                cell1.innerHTML = "&nbsp;" + (startIndex + index + 1);
+                let cell2 = row.insertCell(1);
+                cell2.innerHTML = link.relation;
+                let cell3 = row.insertCell(2);
+                cell3.innerHTML = getNameById(link.from);
+                let cell4 = row.insertCell(3);
+                cell4.innerHTML = getNameById(link.to);
+                let cell5 = row.insertCell(4);
+                cell5.innerHTML = link.score.toFixed(2);
+            });
+        }
+
+        function handleNodeLabel(str) {
+            const maxLabelLength = 24;
+            return str.length > maxLabelLength
+                    ? str.substring(0, maxLabelLength) + "..."
+                    : str;
+        }
+
+        function getNameById(str) {
+            let parts = str.split(".");
+            return parts[parts.length - 1];
+        }
+
+
+        function resetOverview() {
+            const nodeNum = graph.getNodes().length;
+            const generatedNodeNum = graph.getNodes().filter(node => node.getModel().merge).length;
+            const originalNodeNum = nodeNum - generatedNodeNum - 1;
+            const discoveredSimilarityRelationNum = graph.getEdges().filter(edge => edge.getModel().label !== undefined).length;
+            const originalParentRelationNum = graph.getEdges().filter(edge => edge.getModel().style.stroke === originalParentChildEdgesStrokeColor).length;
+            document.getElementById("${paragraphId}_original_node_num").textContent = originalNodeNum;
+            document.getElementById("${paragraphId}_generated_node_num").textContent = generatedNodeNum;
+            document.getElementById("${paragraphId}_original_parent-child_relation_num").textContent = originalParentRelationNum;
+            document.getElementById("${paragraphId}_discovered_similarity_relation_num").textContent = discoveredSimilarityRelationNum;
+        }
+
+        function updateGeneratedParentChildEdgeColor() {
+            const edges = graph.getEdges();
+            edges.forEach(edge => {
+                const model = edge.getModel();
+                if (!model.label) {
+                    const sourceNode = graph.findById(model.source);
+                    const targetNode = graph.findById(model.target);
+                    const sourceModel = sourceNode?.getModel();
+                    const targetModel = targetNode?.getModel();
+                    if ((sourceModel?.merge === true) || (targetModel?.merge === true) || (sourceModel?.id === "rootId") || (targetModel?.id === "rootId")) {
+                        graph.updateItem(edge, {
+                            style: {
+                                stroke: generatedParentChildEdgesStrokeColor
+                            }
+                        });
+                    }
+                }
+            });
+        }
+
+        function handleError(error) {
+            alert(error);
+            throw new Error(error);
+        }
+
+        document.getElementById('${paragraphId}_search_button').onclick = async () => {
+            const executor = new IginxExecutor();
+            const keyword = document.getElementById('${paragraphId}_search_box').value.trim();
+            if (keyword === "") {
+                handleError('Please enter a non-empty keyword');
+            }
+            const topK = Number(document.getElementById("${paragraphId}_search_top_k_box").value.trim());
+            if (!Number.isInteger(topK) || topK <= 0) {
+                handleError('Please enter an integer greater than 0');
+            }
+            const selectedUDF = document.getElementById("${paragraphId}_search_input").value;
+            const statement = '>data.property.search ${paragraphId} ' + topK + ' UDF' + selectedUDF + ' ' + keyword;
+            const result = await executor.execute(statement);
+            console.debug('handleSearch executeInterpreter result:', result);
+            searchedNodes = JSON.parse(result.msg[0].data);
+            console.log('searchedNodes: ' + searchedNodes);
+            await handleSearch();
+            await refreshSearch(Object.keys(nodeMap));
+        };
+
+        function handleSearch() {
+            let tableBody = document.getElementById("${paragraphId}_search_table_body");
+            tableBody.innerHTML = "";
+            searchedNodes.forEach((node, index) => {
+                let row = tableBody.insertRow();
+                let cell1 = row.insertCell(0);
+                cell1.innerHTML = "&nbsp;" + (index + 1);
+                let cell2 = row.insertCell(1);
+                cell2.innerHTML = getNameById(node.id);
+                let cell3 = row.insertCell(2);
+                cell3.innerHTML = node.description;
+                let cell4 = row.insertCell(3);
+                cell4.innerHTML = node.score.toFixed(2);
+            });
+        }
+
+        function refreshSearch(ids) {
+            for (let i = 0; i < ids.length; i++) {
+                for (let j = 0; j < searchedNodes.length; j++) {
+                    if (ids[i] === searchedNodes[j].id) {
+                        graph.updateItem(ids[i], {
+                            style: {
+                                fill: searchedNodesFillColor
+                            }
+                        });
+                    } else if (searchedNodes[j].id.startsWith(ids[i])) {
+                        graph.updateItem(ids[i], {
+                            style: {
+                                stroke: searchedParentNodesStrokeColor
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        document.getElementById('${paragraphId}_fitView_button').addEventListener('click', () => graph.fitView());
+        document.getElementById('${paragraphId}_zoomIn_button').addEventListener('click', () => graph.zoom(1.2));
+        document.getElementById('${paragraphId}_zoomOut_button').addEventListener('click', () => graph.zoom(0.8));
+
+    })();
+</script>
