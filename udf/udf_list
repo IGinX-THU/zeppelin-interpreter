@@ -1,0 +1,21 @@
+# Each line represents a UDF function.
+# Format:
+#   <udf type>,<udf name in sql>,<class name>,<module name>.py
+#
+#   <udf type> can be one of the following:
+#   - UDTF: User Defined Row Transform Function
+#   - UDAF: User Defined Row Aggregate Function
+#   - UDSF: User Defined Row Set Transform Function
+#   <udf name in sql> is the function name used in SQL queries
+#   <class name> is the name of the class that implements the UDF
+#   <module name> is the name of the module that contains the UDF implementation
+
+UDSF,default_describe,UDFDefaultDescribe,default.DefaultDescribe.py
+UDSF,default_encode,UDFDefaultEncode,default.DefaultEncode.py
+UDSF,default_insert,UDFDefaultInsert,default.DefaultInsert.py
+UDSF,default_fetch_embedding,UDFDefaultFetchEmbedding,default.DefaultFetchEmbedding.py
+UDSF,default_fetch_node,UDFDefaultFetchNode,default.DefaultFetchNode.py
+UDSF,default_cluster,UDFDefaultCluster,default.DefaultCluster.py
+UDSF,default_search,UDFDefaultSearch,default.DefaultSearch.py
+UDSF,analyse_relation,UDFDefaultRelate,default.DefaultRelate.py
+UDSF,default_generate,UDFDefaultGenerate,default.DefaultGenerate.py

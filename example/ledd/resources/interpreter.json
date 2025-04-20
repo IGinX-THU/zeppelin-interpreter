@@ -1,0 +1,167 @@
+{
+  "interpreterSettings": {
+    "iginx": {
+      "id": "iginx",
+      "name": "iginx",
+      "group": "iginx",
+      "properties": {
+        "iginx.time.precision": {
+          "name": "iginx.time.precision",
+          "value": "ms",
+          "type": "string"
+        },
+        "iginx.outfile.dir": {
+          "name": "iginx.outfile.dir",
+          "value": "/your/outfile/path",
+          "type": "string"
+        },
+        "iginx.file.http.port": {
+          "name": "iginx.file.http.port",
+          "value": "18082",
+          "type": "number"
+        },
+        "iginx.zeppelin.note.font.size": {
+          "name": "iginx.zeppelin.note.font.size",
+          "value": "16",
+          "type": "number"
+        },
+        "iginx.zeppelin.note.font.size.enable": {
+          "name": "iginx.zeppelin.note.font.size.enable",
+          "value": false,
+          "type": "checkbox"
+        },
+        "iginx.graph.tree.enable": {
+          "name": "iginx.graph.tree.enable",
+          "value": true,
+          "type": "checkbox"
+        },
+        "iginx.fetch.size": {
+          "name": "iginx.fetch.size",
+          "value": "1000",
+          "type": "string"
+        },
+        "iginx.password": {
+          "name": "iginx.password",
+          "value": "root",
+          "type": "password"
+        },
+        "iginx.milvus.port": {
+          "name": "iginx.milvus.port",
+          "value": "19530",
+          "type": "number"
+        },
+        "iginx.port": {
+          "name": "iginx.port",
+          "value": "6888",
+          "type": "number"
+        },
+        "iginx.host": {
+          "name": "iginx.host",
+          "value": "iginx",
+          "type": "string"
+        },
+        "iginx.milvus.host": {
+          "name": "iginx.milvus.host",
+          "value": "milvus",
+          "type": "string"
+        },
+        "iginx.outfile.max.size": {
+          "name": "iginx.outfile.max.size",
+          "value": "10240",
+          "type": "number"
+        },
+        "iginx.zeppelin.upload.file.max.size": {
+          "name": "iginx.zeppelin.upload.file.max.size",
+          "value": "10",
+          "type": "number"
+        },
+        "iginx.zeppelin.upload.dir.max.size": {
+          "name": "iginx.zeppelin.upload.dir.max.size",
+          "value": "200",
+          "type": "number"
+        },
+        "iginx.outfile.max.num": {
+          "name": "iginx.outfile.max.num",
+          "value": "100",
+          "type": "string"
+        },
+        "iginx.username": {
+          "name": "iginx.username",
+          "value": "root",
+          "type": "string"
+        },
+        "iginx.file.http.host": {
+          "name": "iginx.file.http.host",
+          "value": "127.0.0.1",
+          "type": "string"
+        }
+      },
+      "status": "READY",
+      "interpreterGroup": [
+        {
+          "name": "iginx",
+          "class": "org.apache.zeppelin.iginx.IginxInterpreter",
+          "defaultInterpreter": false,
+          "editor": {
+            "language": "sql",
+            "editOnDblClick": false,
+            "completionKey": "TAB"
+          }
+        }
+      ],
+      "dependencies": [],
+      "option": {
+        "remote": true,
+        "port": -1,
+        "perNote": "shared",
+        "perUser": "shared",
+        "isExistingProcess": false,
+        "setPermission": false,
+        "owners": [],
+        "isUserImpersonate": false
+      }
+    }
+  },
+  "interpreterBindings": {
+    "2KKKWHQRC": [
+      "iginx"
+    ],
+    "2KSFKGQKM": []
+  },
+  "interpreterRepositories": [
+    {
+      "id": "central",
+      "type": "default",
+      "url": "http://repo1.maven.org/maven2/",
+      "releasePolicy": {
+        "enabled": true,
+        "updatePolicy": "daily",
+        "checksumPolicy": "warn"
+      },
+      "snapshotPolicy": {
+        "enabled": true,
+        "updatePolicy": "daily",
+        "checksumPolicy": "warn"
+      },
+      "mirroredRepositories": [],
+      "repositoryManager": false
+    },
+    {
+      "id": "local",
+      "type": "default",
+      "url": "file:///root/.m2/repository",
+      "releasePolicy": {
+        "enabled": true,
+        "updatePolicy": "daily",
+        "checksumPolicy": "warn"
+      },
+      "snapshotPolicy": {
+        "enabled": true,
+        "updatePolicy": "daily",
+        "checksumPolicy": "warn"
+      },
+      "mirroredRepositories": [],
+      "repositoryManager": false
+    }
+  ]
+}

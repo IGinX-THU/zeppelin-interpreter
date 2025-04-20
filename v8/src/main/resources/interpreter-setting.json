@@ -7,8 +7,8 @@
       "iginx.host": {
         "envName": null,
         "propertyName": "iginx.host",
-        "defaultValue": "127.0.0.1",
-        "description": "IginX server host to connect to, Default = 127.0.0.1",
+        "defaultValue": "iginx",
+        "description": "IginX server host to connect to, Default = iginx",
         "type": "string"
       },
       "iginx.port": {
@@ -109,12 +109,19 @@
         "description": "The host of File HTTP server, Default = 127.0.0.1",
         "type": "string"
       },
-      "iginx.graph.tree.enable": {
+      "iginx.milvus.host": {
         "envName": null,
-        "propertyName": "iginx.graph.tree.enable",
-        "defaultValue": true,
-        "description": "If true, the result of show columns will be displayed as a tree; otherwise, it will be displayed as forest, Default = true",
-        "type": "checkbox"
+        "propertyName": "iginx.milvus.host",
+        "defaultValue": "milvus",
+        "description": "Milvus database host to connect to, Default = 127.0.0.1",
+        "type": "string"
+      },
+      "iginx.milvus.port": {
+        "envName": null,
+        "propertyName": "iginx.milvus.port",
+        "defaultValue": "19530",
+        "description": "Milvus database port to connect to, Default = 19530",
+        "type": "number"
       }
     },
     "editor": {
