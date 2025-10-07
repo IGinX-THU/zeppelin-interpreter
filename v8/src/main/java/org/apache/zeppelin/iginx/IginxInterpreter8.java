@@ -198,8 +198,34 @@ public class IginxInterpreter8 extends Interpreter {
           new SimpleFileServer(fileHttpPort, outfileDir, DEFAULT_UPLOAD_DIR, uploadDirMaxSize);
       fileServer.start();
       loadNGINXStaticFilesInfo();
+      extractStaticJsLibraries();
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  // 将本地的js文件复制到SimpleFileServer上
+  private void extractStaticJsLibraries() {
+    String[] jsFiles = {"highcharts.js", "treemap.js", "treegraph.js", "accessibility.js"};
+    try {
+      Path targetLibDir = Paths.get(outfileDir, "graphs", "lib");
+      Files.createDirectories(targetLibDir);
+
+      for (String jsFile : jsFiles) {
+        String resourcePath = "static/lib/" + jsFile;
+        Path targetFile = targetLibDir.resolve(jsFile);
+
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream(resourcePath)) {
+          if (in == null) {
+            LOGGER.error("Cannot find static resource: " + resourcePath);
+            continue;
+          }
+          Files.copy(in, targetFile, StandardCopyOption.REPLACE_EXISTING);
+          LOGGER.info("Extracted static JS file to: " + targetFile.toAbsolutePath());
+        }
+      }
+    } catch (IOException e) {
+      LOGGER.error("Failed to extract static JS libraries", e);
     }
   }
 
@@ -375,7 +401,8 @@ public class IginxInterpreter8 extends Interpreter {
       }
       List<HighchartsTreeNode> nodeList = new ArrayList<>();
       int depth = tree.traverseToHighchartsTreeNodes(tree.getRoot(), nodeList);
-
+      // 拼接SimpleFileServer的Url并注入html
+      String fileServerUrl = "http://" + localIpAddress + ":" + fileHttpPort;
       String jsonString = JSON.toJSONString(nodeList);
       String html =
           content
@@ -383,7 +410,9 @@ public class IginxInterpreter8 extends Interpreter {
               .replace("PARAGRAPH_ID", paragraphId)
               .replace("NODE_LIST", jsonString)
               .replace("TREE_DEPTH", String.valueOf(depth))
-              .replace("TREE_ENABLE", String.valueOf(graphTreeEnable));
+              .replace("TREE_ENABLE", String.valueOf(graphTreeEnable))
+              .replace("FILE_SERVER_URL", fileServerUrl);
+
       String fileName = paragraphId + "_tree.html";
       // 写入文件服务器paragraphID_tree.html
       String targetPath = outfileDir + "/graphs/tree/" + fileName;

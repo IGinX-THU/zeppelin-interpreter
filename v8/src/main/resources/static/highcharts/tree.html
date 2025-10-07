@@ -67,12 +67,21 @@
                     // await loadLibrary('lib/treegraph.js');
                     // await loadLibrary('lib/exporting.js');
                     // await loadLibrary('lib/accessibility.js');
-                    await loadLibrary('https://code.highcharts.com/highcharts.js');
+
+                    // baseUrl会被替换为simplefileserver的根目录
+                    const baseUrl = 'FILE_SERVER_URL';
+                    // 从simplefileserver中加载需要的js文件
+                    await loadLibrary(baseUrl + '/graphs/lib/highcharts.js');
+                    await loadLibrary(baseUrl + '/graphs/lib/treemap.js');
+                    await loadLibrary(baseUrl + '/graphs/lib/treegraph.js');
+                    await loadLibrary(baseUrl + '/graphs/lib/accessibility.js');
+                    console.log('MyLibrary 已从本地加载');
+/*                    await loadLibrary('https://code.highcharts.com/highcharts.js');
                     await loadLibrary('https://code.highcharts.com/modules/treemap.js');
                     await loadLibrary('https://code.highcharts.com/modules/treegraph.js');
                     // await loadLibrary('https://code.highcharts.com/modules/exporting.js');
                     await loadLibrary('https://code.highcharts.com/modules/accessibility.js');
-                    console.log('MyLibrary 已加载');
+                    console.log('MyLibrary 已加载');*/
                     // 继续执行依赖于库的代码
                     let nodeList = NODE_LIST;
                     let depth = TREE_DEPTH;
