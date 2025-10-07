@@ -14,6 +14,7 @@
 
     <properties>
         <skipTests>true</skipTests>
+        <js.lib.dir>${project.basedir}/src/main/resources/static/lib</js.lib.dir>
     </properties>
 
     <dependencies>
@@ -43,6 +44,44 @@
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version> <executions>
+                    <execution>
+                        <id>download-js-libs</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <echo message="Downloading JavaScript libraries to ${js.lib.dir}"/>
+
+                                <mkdir dir="${js.lib.dir}"/>
+
+                                <get src="https://code.highcharts.com/highcharts.js"
+                                     dest="${js.lib.dir}/highcharts.js"
+                                     verbose="true" usetimestamp="true"/>
+
+                                <get src="https://code.highcharts.com/modules/treemap.js"
+                                     dest="${js.lib.dir}/treemap.js"
+                                     verbose="true" usetimestamp="true"/>
+
+                                <get src="https://code.highcharts.com/modules/treegraph.js"
+                                     dest="${js.lib.dir}/treegraph.js"
+                                     verbose="true" usetimestamp="true"/>
+
+                                <get src="https://code.highcharts.com/modules/accessibility.js"
+                                     dest="${js.lib.dir}/accessibility.js"
+                                     verbose="true" usetimestamp="true"/>
+
+                                <echo message="JavaScript libraries downloaded."/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <artifactId>maven-shade-plugin</artifactId>
                 <executions>
